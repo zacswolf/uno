@@ -2,38 +2,49 @@ from deck import Deck
 from enums import Direction, Color, Type
 from card import Card
 import random
+import logging
+from typing import List
 
-from player import str_to_player
+from player import str_to_player, Player
 
 
 class Game(object):
     def __init__(self, args) -> None:
-        # Store args
-        self.num_players = args.num_players
-        self.skip_draw = not args.no_draw_skip
+        try:
+            logging.info(msg="args: %s" % args)
 
-        if self.num_players < 2 or self.num_players > 10:
-            raise Exception("Invalid number of players")
-        assert self.num_players == len(args.players)
+            # Store args
+            self.num_players = args.num_players
+            self.skip_draw = not args.no_draw_skip
 
-        self.deck = Deck(args.with_replacement)
+            if self.num_players < 2 or self.num_players > 10:
+                raise ValueError("Invalid number of players")
+            elif self.num_players != len(args.players):
+                raise ValueError("num_players arg doesn't match players arg list")
 
-        self.players = []
-        for player in args.players:
-            self.players.append(str_to_player(player)())
+            self.deck = Deck(args.with_replacement)
 
-        # deal
-        for _ in range(7):
-            for player in self.players:
-                player.get_card(self.draw_card())
+            self.players: List[Player] = []
+            for player in args.players:
+                # Create player based on player str
+                self.players.append(str_to_player(player)())
 
-        # draw top card
-        self.pile = [self.draw_card()]
-        while self.pile[-1].type > 9:
-            self.pile.append(self.draw_card())
+            # Deal
+            for _ in range(args.num_cards):
+                for player in self.players:
+                    player.get_card(self.draw_card())
 
-        self.direction = Direction.CLOCKWISE
-        self.player_idx = 0
+            # Draw top card
+            self.pile = [self.draw_card()]
+            while self.pile[-1].type > Type.NINE:
+                self.pile.append(self.draw_card())
+
+            self.direction = Direction.CLOCKWISE
+            self.player_idx = 0  # Maybe make this random
+            self.turn_num = 0
+        except:
+            logging.exception("Fatal error in initalizing game", exc_info=True)
+            raise
 
     def draw_card(self) -> Card:
         if not self.deck.size():
@@ -52,12 +63,12 @@ class Game(object):
         game_over = False
         try:
             while not game_over:
-                next_player_idx = (self.player_idx + self.direction) % self.num_players
-
+                self.turn_num += 1
                 card = self.turn()
 
+                next_player_idx = (self.player_idx + self.direction) % self.num_players
+
                 if card is not None:
-                    # self.pile.append(self.draw_card())
                     self.pile.append(card)
 
                     skip = False
@@ -69,6 +80,7 @@ class Game(object):
                             if (self.direction == Direction.COUNTERCLOCKWISE)
                             else Direction.COUNTERCLOCKWISE
                         )
+                        # Change next player
                         next_player_idx = (
                             self.player_idx + self.direction
                         ) % self.num_players
@@ -96,19 +108,35 @@ class Game(object):
 
                     if skip:
                         # Skip logic
+                        logging.debug(
+                            "The next player at idx %s can't act" % next_player_idx
+                        )
                         next_player_idx = (
                             next_player_idx + self.direction
                         ) % self.num_players
 
                 if len(self.players[self.player_idx].hand) == 0:
+                    # Current Player won the game
                     game_over = True
+                    logging.info(
+                        "Game over! Winner deats: turn_num: %s, player_idx: %s, plyr_str: %s"
+                        % (
+                            self.turn_num,
+                            self.player_idx,
+                            self.players[self.player_idx].get_name(),
+                        )
+                    )
 
                     # Notify players for feedback
                     for (idx, player) in enumerate(self.players):
                         player.on_finish((self.player_idx - idx) % self.num_players)
                 else:
+                    # Next player's turn
                     self.player_idx = next_player_idx
         except Exception:
+            # Log
+            logging.exception("Fatal error in run_game", exc_info=True)
+
             # Notify players for feedback
             for player in self.players:
                 player.on_finish(-1)
@@ -120,17 +148,31 @@ class Game(object):
         return
 
     def turn(self) -> Card:
+        # Get current player
         player = self.players[self.player_idx]
+
+        # Get all players num cards
         card_counts = list(map(lambda player: len(player.hand), self.players))
+        # Shift such that current player is first
+        # TODO: rotate by direction of play
         card_counts = card_counts[self.player_idx :] + card_counts[: self.player_idx]
+
+        logging.info(
+            "turn_num: %s, player_idx: %s, plyr_str: %s"
+            % (self.turn_num, self.player_idx, player.get_name())
+        )
 
         valid_card = False
         card = None
         while not valid_card:
             card = player.on_turn(self.pile, card_counts)
+            # TODO: make sure player isn't playing a card that they don't have
+
             if card is None:
                 # Draw
-                player.get_card(self.draw_card())
+                card_drawn = self.draw_card()
+                logging.debug("Draws %s" % card_drawn)
+                player.get_card(card_drawn)
                 assert card_counts[0] == len(self.players[self.player_idx].hand) - 1
                 card_counts[0] = len(self.players[self.player_idx].hand)
                 card = player.on_draw(self.pile, card_counts)
@@ -147,12 +189,20 @@ class Game(object):
                             self.pile, card_counts, card.type
                         )
                         card.color = color
+
+                    logging.debug(
+                        "Card played: %s, Top of pile: %s" % (card, self.pile[-1])
+                    )
+
                 else:
+                    logging.warn(
+                        "Card rejected: %s, Top of pile: %s" % (card, self.pile[-1])
+                    )
                     player.on_card_rejection(
                         card
                     )  # might have some flawed logic with re drawing
-                    print("bad card")
-            else:  # card is None:
+            else:
+                # card is None thus the player just drawed
                 valid_card = True
 
         return card
@@ -161,6 +211,8 @@ class Game(object):
 if __name__ == "__main__":
     import argparse
     import sys
+    import os
+    from datetime import datetime
 
     if not sys.version_info >= (3, 10):
         sys.exit("Python < 3.10 is unsupported.")
@@ -177,7 +229,7 @@ if __name__ == "__main__":
     )
     my_parser.add_argument(
         "--no_draw_skip",
-        action="store_false",
+        action="store_true",
         help="Don't skip a players turn if they have to draw 2/4",
     )
     my_parser.add_argument(
@@ -201,7 +253,22 @@ if __name__ == "__main__":
 
     args = my_parser.parse_args()
 
-    assert args.num_players == 2
+    # assert args.num_players == 2
 
+    # Setup logging
+    log_file = os.path.join(
+        os.path.dirname(__file__),
+        "../logs/",
+        datetime.now().strftime("log_%m_%d_%H_%M_%S.log"),
+    )
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+        datefmt="%m-%d %H:%M",
+        filename=log_file,
+        filemode="w",
+    )
+
+    # Main
     game = Game(args)
     game.run_game()

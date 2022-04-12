@@ -6,6 +6,9 @@ class HumanPlayer(Player):
     def __init__(self) -> None:
         super().__init__()
 
+    def get_name(self) -> str:
+        return "human"
+
     def on_turn(self, pile, card_counts):
         print("CARD COUNTS:\t", card_counts)
         print(

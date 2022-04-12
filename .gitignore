@@ -1,2 +1,15 @@
+# Python
 __pycache__
+
+# PyEnv
 .python-version
+
+# Log files
+*.log
+
+# Virtualenv
+.venv
+
+# VSCode
+.vscode/*
+!.vscode/launch.json
