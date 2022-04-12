@@ -28,3 +28,14 @@ class Player(object):
     # Winner is a player index relative to player or -1 if no-one wins
     def on_finish(self, winner) -> None:
         return None
+
+def str_to_player(plyr_str: str) -> Player:
+    """
+    To add a new bot add a case to the and then return the Player
+    """
+
+    match plyr_str:
+        case "human":
+            from players.human import HumanPlayer 
+            return HumanPlayer
+    raise Exception("player string `%s` is invalid" % plyr_str)

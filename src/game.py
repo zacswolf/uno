@@ -1,8 +1,9 @@
 from deck import Deck
-from players.human import HumanPlayer
 from enums import Direction, Color, Type
 from card import Card
 import random
+
+from player import str_to_player
 
 
 class Game(object):
@@ -13,12 +14,13 @@ class Game(object):
 
         if self.num_players < 2 or self.num_players > 10:
             raise Exception("Invalid number of players")
+        assert self.num_players == len(args.players)
 
         self.deck = Deck(args.with_replacement)
 
         self.players = []
-        for _ in range(self.num_players):
-            self.players.append(HumanPlayer())
+        for player in args.players:
+            self.players.append(str_to_player(player)())
 
         # deal
         for _ in range(7):
@@ -158,6 +160,10 @@ class Game(object):
 
 if __name__ == "__main__":
     import argparse
+    import sys
+
+    if not sys.version_info >= (3, 10):
+        sys.exit("Python < 3.10 is unsupported.")
 
     my_parser = argparse.ArgumentParser(description="Uno game")
     my_parser.add_argument(
@@ -186,10 +192,15 @@ if __name__ == "__main__":
         default=7,
         help="Initial number of cards per player",
     )
+    my_parser.add_argument(
+        "--players",
+        nargs="+",
+        required=True,
+        help="List of players using player strings",
+    )
 
     args = my_parser.parse_args()
 
-    print("asd", args.with_replacement)
     assert args.num_players == 2
 
     game = Game(args)
