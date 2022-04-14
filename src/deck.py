@@ -3,11 +3,11 @@ from enums import Color, Type
 import random
 
 
-class Deck(object):
+class Deck:
     def __init__(self, with_replacement: bool = False) -> None:
         self.with_replacement = with_replacement
 
-        self.deck = []
+        self.deck: list[Card] = []
 
         for color in [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]:
             # Only one ZERO per color
@@ -39,15 +39,33 @@ class Deck(object):
         random.shuffle(self.deck)
 
     def draw_card(self) -> Card:
-        if len(self.deck) > 0:
-            if not self.with_replacement:
-                return self.deck.pop()
-            else:
-                return random.choice(self.deck)
-        raise Exception("No cards in deck")
+        """Draw a card
+
+        Returns:
+            Card: Drawn card
+        """
+        assert len(self.deck) > 0
+        if not self.with_replacement:
+            return self.deck.pop()
+        else:
+            return random.choice(self.deck)
 
     def size(self) -> int:
+        """Get length of deck
+
+        Returns:
+            int: Number of cards in the deck
+        """
         return len(self.deck)
+
+    def reset(self, cards: list[Card]) -> None:
+        """Reset deck with new cards
+
+        Args:
+            cards (list[Card]): New cards
+        """
+        assert self.size() == 0
+        self.deck = cards
 
 
 if __name__ == "__main__":

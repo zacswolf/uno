@@ -1,13 +1,21 @@
 from enums import Color, Type
 
 
-class Card(object):
-    def __init__(self, type, color) -> None:
+class Card:
+    def __init__(self, type: Type, color: Color) -> None:
         self.type = type
         self.color = color
 
-    def canPlayOn(self, top_of_pile) -> bool:
-        if self.color == top_of_pile.color or self.type == top_of_pile.type:
+    def can_play_on(self, card: "Card") -> bool:
+        """Checks if this card can be played on another card
+
+        Args:
+            card (Card): Another card
+
+        Returns:
+            bool: Can this card be played on another card
+        """
+        if self.color == card.color or self.type == card.type:
             return True
         if self.color == Color.WILD:
             return True

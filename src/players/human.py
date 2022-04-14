@@ -46,7 +46,7 @@ class HumanPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, type):
+    def on_choose_wild_color(self, pile, card_counts):
         print("What color do you want to change it to? ('r','g','b', 'y')")
         while True:
             wild_color = input()

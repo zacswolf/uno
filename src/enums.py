@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Counter
+
 
 class Color(IntEnum):
     RED = 1
@@ -7,6 +7,7 @@ class Color(IntEnum):
     GREEN = 3
     YELLOW = 4
     WILD = 5
+
 
 class Type(IntEnum):
     ZERO = 0
@@ -24,6 +25,7 @@ class Type(IntEnum):
     DRAW2 = 12
     CHANGECOLOR = 13
     DRAW4 = 14
+
 
 class Direction(IntEnum):
     CLOCKWISE = 1

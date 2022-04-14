@@ -1,15 +1,15 @@
+from argparse import Namespace
 from deck import Deck
 from enums import Direction, Color, Type
 from card import Card
 import random
 import logging
-from typing import List
 
 from player import str_to_player, Player
 
 
 class Game(object):
-    def __init__(self, args) -> None:
+    def __init__(self, args: Namespace) -> None:
         try:
             logging.info(msg="args: %s" % args)
 
@@ -24,7 +24,7 @@ class Game(object):
 
             self.deck = Deck(args.with_replacement)
 
-            self.players: List[Player] = []
+            self.players: list[Player] = []
             for player in args.players:
                 # Create player based on player str
                 self.players.append(str_to_player(player)())
@@ -50,18 +50,20 @@ class Game(object):
         if not self.deck.size():
             # Deck is empty, move pile into deck
 
-            self.deck = random.shuffle(self.pile[:-1])
+            self.deck.reset(random.shuffle(self.pile[:-1]))
             self.pile = [self.pile[-1]]
 
             if not self.deck.size():
-                # players are holding all of the cards
+                # Players are holding all of the cards
                 raise Exception("Shitty players")
 
         return self.deck.draw_card()
 
-    def run_game(self):
-        game_over = False
+    def run_game(self) -> None:
+        """Run the Game"""
+
         try:
+            game_over = False
             while not game_over:
                 self.turn_num += 1
                 card = self.turn()
@@ -129,6 +131,7 @@ class Game(object):
 
                     # Notify players for feedback
                     for (idx, player) in enumerate(self.players):
+                        # TODO: Maybe rotate player idx to direction of play
                         player.on_finish((self.player_idx - idx) % self.num_players)
                 else:
                     # Next player's turn
@@ -145,9 +148,13 @@ class Game(object):
             raise
 
         print("Game over")
-        return
 
-    def turn(self) -> Card:
+    def turn(self) -> Card | None:
+        """A turn of the game
+
+        Returns:
+            Card | None: card played on this turn or None if player passed
+        """
         # Get current player
         player = self.players[self.player_idx]
 
@@ -180,7 +187,7 @@ class Game(object):
 
             # Check card
             if card is not None:
-                if card.canPlayOn(self.pile[-1]):
+                if card.can_play_on(self.pile[-1]):
                     valid_card = True
 
                     # Deal with wild
