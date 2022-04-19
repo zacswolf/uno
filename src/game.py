@@ -33,6 +33,8 @@ class Game:
             for _ in range(args.num_cards):
                 for player in self.players:
                     player.get_card(self.draw_card())
+            for player_idx, player in enumerate(self.players):
+                logging.info("%s: %s" % (player_idx, player.hand))
 
             # Draw top card
             self.pile = [self.draw_card()]
@@ -50,14 +52,17 @@ class Game:
         if not self.deck.size():
             # Deck is empty, move pile into deck
 
-            self.deck.reset(random.shuffle(self.pile[:-1]))
+            self.deck.reset(self.pile[:-1])
             self.pile = [self.pile[-1]]
 
             if not self.deck.size():
                 # Players are holding all of the cards
                 raise Exception("Shitty players")
-
-        return self.deck.draw_card()
+        card = self.deck.draw_card()
+        assert bool(card.type >= Type.CHANGECOLOR) != bool(card.color != Color.WILD), (
+            "Wild card has a color: %s" % card
+        )
+        return card
 
     def run_game(self) -> None:
         """Run the Game"""
@@ -210,6 +215,8 @@ class Game:
 
                     # Deal with wild
                     if card.color == Color.WILD:
+
+                        logging.debug("A wild was played")
                         color = player.on_choose_wild_color(
                             self.pile, card_counts, card.type
                         )
@@ -308,3 +315,4 @@ if __name__ == "__main__":
         winner_idx = game.run_game()
         winner_tracker[winner_idx] += 1
     print(winner_tracker)
+    logging.info("Winner tracker: %s" % winner_tracker)

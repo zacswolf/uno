@@ -112,18 +112,28 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
     # To add a new bot add a case to the and then return the Player
     match plyr_str:
         case "human":
-            from players.human import HumanPlayer 
+            from players.human import HumanPlayer
             return HumanPlayer
         case "basic":
-            from players.non_rl import BasicPlayer 
+            from players.non_rl import BasicPlayer
             return BasicPlayer
+        case "noob":
+            from players.non_rl import NoobPlayer
+            return NoobPlayer
         case "random":
-            from players.non_rl import RandomPlayer 
+            from players.non_rl import RandomPlayer
             return RandomPlayer
         case "decent":
-            from players.non_rl import DecentPlayer 
+            from players.non_rl import DecentPlayer
             return DecentPlayer
-        case "noob":
-            from players.non_rl import NoobPlayer 
-            return NoobPlayer
+        case "decent2":
+            from players.non_rl import DecentPlayer2
+            return DecentPlayer2
+        case "decent3":
+            from players.non_rl import DecentPlayer3
+            return DecentPlayer3
+        case "decent4":
+            from players.non_rl import DecentPlayer4
+            return DecentPlayer4
+
     raise ValueError("player string `%s` is invalid" % plyr_str)

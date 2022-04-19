@@ -1,3 +1,4 @@
+from copy import copy
 from card import Card
 from enums import Color, Type
 import random
@@ -38,6 +39,11 @@ class Deck:
 
         random.shuffle(self.deck)
 
+        for card in self.deck:
+            assert bool(card.type >= Type.CHANGECOLOR) != bool(
+                card.color != Color.WILD
+            ), ("Wild card has a color: %s" % card)
+
     def draw_card(self) -> Card:
         """Draw a card
 
@@ -48,7 +54,8 @@ class Deck:
         if not self.with_replacement:
             return self.deck.pop()
         else:
-            return random.choice(self.deck)
+            card = copy(random.choice(self.deck))
+            return card
 
     def size(self) -> int:
         """Get length of deck
@@ -64,8 +71,15 @@ class Deck:
         Args:
             cards (list[Card]): New cards
         """
+
         assert self.size() == 0
-        self.deck = cards
+
+        self.deck = random.sample(cards, k=len(cards))
+
+        # Reset Wilds
+        for card in self.deck:
+            if card.type >= Type.CHANGECOLOR:
+                card.color = Color.WILD
 
 
 if __name__ == "__main__":

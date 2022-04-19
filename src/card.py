@@ -17,7 +17,7 @@ class Card:
         """
         if self.color == card.color or self.type == card.type:
             return True
-        if self.color == Color.WILD:
+        if self.color == Color.WILD or card.color == Color.WILD:
             return True
         return False
 
