@@ -1,12 +1,15 @@
-from enums import Color
+from enums import Color, Type
 from card import Card
 from typing import Callable
+from abc import ABC, abstractmethod
 
 
-class Player(object):
+class Player(ABC):
     def __init__(self) -> None:
         self.hand: list[Card] = []
     
+    @staticmethod
+    @abstractmethod
     def get_name(self) -> str:
         """Identifies the player for logging
 
@@ -26,6 +29,7 @@ class Player(object):
         """
         self.hand.append(card)
 
+    @abstractmethod
     def on_turn(self, pile: list[Card], card_counts: list[int]) -> Card | None:
         """Called when its Player's turn
 
@@ -41,6 +45,7 @@ class Player(object):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def on_draw(self, pile: Card, card_counts: list[int]) -> Card | None:
         """Called after Player draws a card and needs to make a decision
 
@@ -56,13 +61,14 @@ class Player(object):
         """
         raise NotImplementedError()
 
-    # Called after Player plays a wild card
-    def on_choose_wild_color(self, pile: Card, card_counts: list[int]) -> Color:
+    @abstractmethod
+    def on_choose_wild_color(self, pile: Card, card_counts: list[int], card_type: Type) -> Color:
         """Called after Player draws a card and needs to make a decision
 
         Args:
             pile (Card): Card on the top of the pile
             card_counts (list[int]): List of all players card counts relative to the player
+            card_type (Type): Type of wildcard
 
         Raises:
             NotImplementedError: Inherited Player must impliment
@@ -108,4 +114,16 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
         case "human":
             from players.human import HumanPlayer 
             return HumanPlayer
+        case "basic":
+            from players.non_rl import BasicPlayer 
+            return BasicPlayer
+        case "random":
+            from players.non_rl import RandomPlayer 
+            return RandomPlayer
+        case "decent":
+            from players.non_rl import DecentPlayer 
+            return DecentPlayer
+        case "noob":
+            from players.non_rl import NoobPlayer 
+            return NoobPlayer
     raise ValueError("player string `%s` is invalid" % plyr_str)

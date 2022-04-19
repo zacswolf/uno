@@ -15,8 +15,8 @@
                 "-n",
                 "2",
                 "--players",
-                "human",
-                "human"
+                "decent",
+                "random"
             ]
         }
     ]

@@ -21,7 +21,7 @@ class HumanPlayer(Player):
 
         # default sort
         self.hand.sort(key=lambda c: c.type)
-        self.hand.sort(key=lambda c: c.color)
+        self.hand.sort(key=lambda c: (c.color - pile[-1].color) % 4)
 
         print("HAND:", ["%i: %s" % (i, c) for (i, c) in enumerate(self.hand)])
 
@@ -46,7 +46,7 @@ class HumanPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts):
+    def on_choose_wild_color(self, pile, card_counts, card_type):
         print("What color do you want to change it to? ('r','g','b', 'y')")
         while True:
             wild_color = input()
@@ -74,7 +74,7 @@ class HumanPlayer(Player):
     def on_finish(self, winner) -> None:
         if winner == 0:
             print("I won")
-        elif winner != -1:
+        elif winner == -1:
             print("No one won")
         else:
             print("I lost")

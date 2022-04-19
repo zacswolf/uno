@@ -8,7 +8,7 @@ import logging
 from player import str_to_player, Player
 
 
-class Game(object):
+class Game:
     def __init__(self, args: Namespace) -> None:
         try:
             logging.info(msg="args: %s" % args)
@@ -61,7 +61,7 @@ class Game(object):
 
     def run_game(self) -> None:
         """Run the Game"""
-
+        winner_idx = -1
         try:
             game_over = False
             while not game_over:
@@ -111,7 +111,7 @@ class Game(object):
                     if skip:
                         # Skip logic
                         logging.debug(
-                            "The next player at idx %s can't act" % next_player_idx
+                            "The next player at idx %s get's skipped" % next_player_idx
                         )
                         next_player_idx = (
                             next_player_idx + self.direction
@@ -120,7 +120,16 @@ class Game(object):
                 if len(self.players[self.player_idx].hand) == 0:
                     # Current Player won the game
                     game_over = True
+                    winner_idx = self.player_idx
                     logging.info(
+                        "Game over! Winner deats: turn_num: %s, player_idx: %s, plyr_str: %s"
+                        % (
+                            self.turn_num,
+                            self.player_idx,
+                            self.players[self.player_idx].get_name(),
+                        )
+                    )
+                    print(
                         "Game over! Winner deats: turn_num: %s, player_idx: %s, plyr_str: %s"
                         % (
                             self.turn_num,
@@ -149,6 +158,8 @@ class Game(object):
 
         print("Game over")
 
+        return winner_idx
+
     def turn(self) -> Card | None:
         """A turn of the game
 
@@ -160,8 +171,9 @@ class Game(object):
 
         # Get all players num cards
         card_counts = list(map(lambda player: len(player.hand), self.players))
+        logging.debug("Card Counts: %s" % card_counts)
         # Shift such that current player is first
-        # TODO: rotate by direction of play
+        # TODO: Maybe rotate idx to direction of play
         card_counts = card_counts[self.player_idx :] + card_counts[: self.player_idx]
 
         logging.info(
@@ -172,21 +184,27 @@ class Game(object):
         valid_card = False
         card = None
         while not valid_card:
+            assert card_counts[0] == len(player.hand)
             card = player.on_turn(self.pile, card_counts)
-            # TODO: make sure player isn't playing a card that they don't have
+            # TODO: Make sure player isn't playing a card that they don't have
+            if card is not None:
+                assert card_counts[0] == len(player.hand) + 1
 
             if card is None:
+                assert len(player.hand) == card_counts[0]
                 # Draw
                 card_drawn = self.draw_card()
                 logging.debug("Draws %s" % card_drawn)
                 player.get_card(card_drawn)
-                assert card_counts[0] == len(self.players[self.player_idx].hand) - 1
-                card_counts[0] = len(self.players[self.player_idx].hand)
+                assert len(player.hand) == card_counts[0] + 1
+                card_counts[0] = len(player.hand)
                 card = player.on_draw(self.pile, card_counts)
             # If card is none at this point, the player drew a card and didn't play it
 
             # Check card
             if card is not None:
+                assert card_counts[0] == len(player.hand) + 1
+
                 if card.can_play_on(self.pile[-1]):
                     valid_card = True
 
@@ -195,19 +213,20 @@ class Game(object):
                         color = player.on_choose_wild_color(
                             self.pile, card_counts, card.type
                         )
+                        # TODO: Make sure Color isn't Wild
                         card.color = color
 
                     logging.debug(
                         "Card played: %s, Top of pile: %s" % (card, self.pile[-1])
                     )
-
                 else:
-                    logging.warn(
+                    logging.warning(
                         "Card rejected: %s, Top of pile: %s" % (card, self.pile[-1])
                     )
                     player.on_card_rejection(
                         card
                     )  # might have some flawed logic with re drawing
+                    assert card_counts[0] == len(self.players[self.player_idx].hand)
             else:
                 # card is None thus the player just drawed
                 valid_card = True
@@ -244,7 +263,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Deck is drawn with replacement",
     )
-
     my_parser.add_argument(
         "--num_cards",
         type=int,
@@ -256,6 +274,12 @@ if __name__ == "__main__":
         nargs="+",
         required=True,
         help="List of players using player strings",
+    )
+    my_parser.add_argument(
+        "--num_games",
+        type=int,
+        default=1,
+        help="Number of games to play",
     )
 
     args = my_parser.parse_args()
@@ -277,5 +301,10 @@ if __name__ == "__main__":
     )
 
     # Main
-    game = Game(args)
-    game.run_game()
+    winner_tracker = [0] * (args.num_players + 1)
+    for game_num in range(args.num_games):
+        logging.info("STARTING GAME %d" % game_num)
+        game = Game(args)
+        winner_idx = game.run_game()
+        winner_tracker[winner_idx] += 1
+    print(winner_tracker)

@@ -3,8 +3,8 @@ from enum import IntEnum
 
 class Color(IntEnum):
     RED = 1
-    BLUE = 2
-    GREEN = 3
+    GREEN = 2
+    BLUE = 3
     YELLOW = 4
     WILD = 5
 
