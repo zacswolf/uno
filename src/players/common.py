@@ -15,11 +15,12 @@
 
 from card import Card
 import numpy as np
+from deck import Deck
 
 from enums import Color, Type
 
 
-def get_ss_rep1(hand, top_of_pile: Card, card_counts: list(int)):
+def get_ss_rep1(hand, top_of_pile: Card, card_counts):
     # ASSUME: 2 players only
 
     # card counts [cc0: me, cc1]
@@ -57,7 +58,7 @@ def get_ss_rep1(hand, top_of_pile: Card, card_counts: list(int)):
 
     # Hand
     for card in hand:
-        if card.color != Color.Wild:
+        if card.color != Color.WILD:
             ss[
                 len(card_counts)
                 + NUM_COLORS_NON_WILD
@@ -67,7 +68,12 @@ def get_ss_rep1(hand, top_of_pile: Card, card_counts: list(int)):
             ] += 1
         else:
             assert (card.type == Type.CHANGECOLOR) or (card.type == Type.DRAW4)
-            ss[card.Type - (Type.DRAW4 + 1)] += 1
+            ss[card.type - (Type.DRAW4 + 1)] += 1
+
+    return ss
+
+
+# CARDS_IN_GAME = Deck(True).deck
 
 
 # Inject game knowledge
@@ -80,3 +86,11 @@ def get_ss_rep1(hand, top_of_pile: Card, card_counts: list(int)):
 #   maybe something special for the top of pile
 #   add meta data to each handcard/slot that says how many cards in your hand can be softstreaked with that card
 #  Montecarlo end games
+
+
+# How should the output of a bot's value-net look like?
+#   A distribution over the whole card action space (doesn't matter if it has the card)
+#   A distribution over the hand card action space
+#   A distribution over the whole card action space except that the cards it has are at the front (rotated)
+
+# The wild card out puts should be colored not wild

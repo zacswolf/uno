@@ -135,5 +135,8 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
         case "decent4":
             from players.non_rl import DecentPlayer4
             return DecentPlayer4
+        case "firstrlplayer":
+            from players.first_rl_nn import FirstRLPlayer
+            return FirstRLPlayer
 
     raise ValueError("player string `%s` is invalid" % plyr_str)
