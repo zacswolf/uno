@@ -2,11 +2,11 @@ from enum import IntEnum
 
 
 class Color(IntEnum):
-    RED = 1
-    GREEN = 2
-    BLUE = 3
-    YELLOW = 4
-    WILD = 5
+    RED = 0
+    GREEN = 1
+    BLUE = 2
+    YELLOW = 3
+    WILD = 4
 
 
 class Type(IntEnum):

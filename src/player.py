@@ -97,7 +97,7 @@ class Player(ABC):
 
 
 def str_to_player(plyr_str: str) -> Callable[[], Player]:
-    """Converts player string into 
+    """Converts player string into a player 
 
     Args:
         plyr_str (str): String representing a type of player

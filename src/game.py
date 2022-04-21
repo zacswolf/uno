@@ -25,9 +25,9 @@ class Game:
             self.deck = Deck(args.with_replacement)
 
             self.players: list[Player] = []
-            for player in args.players:
+            for player_str in args.players:
                 # Create player based on player str
-                self.players.append(str_to_player(player)())
+                self.players.append(str_to_player(player_str)())
 
             # Deal
             for _ in range(args.num_cards):

@@ -89,7 +89,7 @@ class BasicPlayer(Player):
         return "basic"
 
     def on_turn(self, pile, card_counts):
-        # Choose Color/Numbers -> Color/srd2 -> numbers -> srd -> Wild
+        # Choose Color/Numbers -> Color/srd2 -> numbers -> srd2 -> Wild -> Draw card
         top_of_pile = pile[-1]
 
         shuffled_hand = random.sample(self.hand, k=len(self.hand))
@@ -102,7 +102,7 @@ class BasicPlayer(Player):
         shuffled_hand.sort(
             key=lambda c: 5
             if c.color == Color.WILD
-            else (c.color - top_of_pile.color) % 4
+            else (c.color - top_of_pile.color) % 4  # creating bias
         )
         card = next((c for c in shuffled_hand if c.can_play_on(top_of_pile)), None)
         if card:

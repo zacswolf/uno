@@ -12,11 +12,10 @@ class HumanPlayer(Player):
     def on_turn(self, pile, card_counts):
         print("CARD COUNTS:\t", card_counts)
         print(
-            "PILE: NEW\t",
+            "PILE:\t",
             list(reversed(pile[-len(card_counts) :]))
             if (len(pile) >= len(card_counts))
             else pile,
-            "\tOLD",
         )
 
         # default sort
