@@ -9,6 +9,7 @@ from enums import Color, Type
 
 from player import Player
 from players.common.action_space import ASRep1
+from players.common.misc import act_filter
 from players.common.state_space import SSRep1
 
 
@@ -166,7 +167,7 @@ class FirstRLPlayer(Player):
         return
 
 
-class SecoundRLPlayer(Player):
+class SecondRLPlayer(Player):
     def __init__(self, args) -> None:
         super().__init__(args)
         self.wild_choice = None
@@ -213,96 +214,39 @@ class SecoundRLPlayer(Player):
         loss.backward()  # compute grad
         self.optimizer.step()  # apply grad
 
-    def act_filter(self, action_tuple, top_of_pile):
-        # True if can is in hand and can be played on top_of_pile
-        if action_tuple[0] is None:
-            return True
-        else:
-            # (
-            #     action_tuple[0]
-            #     if action_tuple[0].type < Type.CHANGECOLOR
-            #     else Card(action_tuple[0].type, Color.WILD)
-            # )
-            card = action_tuple[0]
-            if action_tuple[0].type >= Type.CHANGECOLOR:
-                card = Card(action_tuple[0].type, Color.WILD)
-
-            return card.can_play_on(top_of_pile) and card in self.hand
-
-    def get_action(self, s, top_of_pile):  # returns action
+    def get_action(self, state, top_of_pile: Card):  # returns action
         self.net.eval()
 
-        s = Variable(torch.from_numpy(s).type(torch.float32))
-        action_dist = self.net(s).detach().numpy()
+        # Get action dist from state
+        state = torch.from_numpy(state).type(torch.float32)
+        action_dist = self.net(state).detach().numpy()
 
-        # Morph action dist to only include cards in our hand
-        # print("hand", self.hand, "\n\n")
+        # Morph action dist to only include valid cards
 
-        actions = [
-            (self.action_space.idx_to_card(action_idx), action_prob)
-            for action_idx, action_prob in enumerate(action_dist)
+        # Get valid action idxs
+        assert self.as_size == action_dist.shape[0]
+        valid_actions_idxs = [
+            action_idx
+            for action_idx in range(self.as_size)
+            if act_filter(
+                self.hand, self.action_space.idx_to_card(action_idx), top_of_pile
+            )
         ]
 
-        # Filters to only cards that are in our hand
-        # valid_cards, valid_action_dist = zip(
-        #     *filter(
-        #         lambda action_tuple: True
-        #         if action_tuple[0] is None
-        #         else (
-        #             action_tuple[0]
-        #             if action_tuple[0].type < Type.CHANGECOLOR
-        #             else Card(action_tuple[0].type, Color.WILD)
-        #         )
-        #         in self.hand,
-        #         actions,
-        #     )
-        # )
+        valid_action_dist = action_dist[valid_actions_idxs]
 
-        # filter to only cards in our hand and can be played on top of pile
-        valid_cards, valid_action_dist = zip(
-            *(
-                action_tuple
-                for action_tuple in actions
-                if self.act_filter(action_tuple, top_of_pile)
-            )
-        )
-
-        # print(valid_action_dist)
-        valid_action_dist = np.asarray(valid_action_dist)
+        # Normalize
         dist_sum = np.sum(valid_action_dist)
         if dist_sum == 0:
             valid_action_dist = None
         else:
             valid_action_dist = valid_action_dist / dist_sum
-        # print(valid_action_dist, "\n")
-        card = np.random.choice(valid_cards, p=valid_action_dist)
 
-        # print("valid_cards", valid_cards)
-        # print("hand", self.hand)
-        # print("dist", card_dist)
+        # Sample
+        action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
 
-        # print("valid_cards", valid_cards)
-        # print("hand", self.hand)
-        # print("dist", card_dist)
-        # raise Exception
-
-        # Get action from distribution
-        # action_idx = np.random.choice(
-        #     np.arange(self.as_size), p=action_dist.detach().numpy()
-        # )
-        # card = self.action_space.idx_to_card(action_idx)
-
-        in_hand = (
-            True
-            if card is None
-            else (card if card.type < Type.CHANGECOLOR else Card(card.type, Color.WILD))
-            in self.hand
-        )
-        # print(card)
-        # print(self.hand)
-        assert in_hand
-
-        return card
+        # Convert to card
+        return self.action_space.idx_to_card(action_idx)
 
     def on_turn(self, pile, card_counts):
 
