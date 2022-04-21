@@ -15,8 +15,13 @@
                 "-n",
                 "2",
                 "--players",
-                "decent",
-                "random"
+                "firstrlplayer",
+                "basic",
+                "--with_replacement",
+                "--num_games",
+                "15",
+                "--num_cards",
+                "7"
             ]
         }
     ]

@@ -35,6 +35,10 @@ class Game:
     def reset(self):
         self.deck = Deck(args.with_replacement)
 
+        # Clear hands
+        for player in self.players:
+            player.hand = []
+
         # Deal
         for _ in range(args.num_cards):
             for player in self.players:
@@ -221,10 +225,10 @@ class Game:
                     # Deal with wild
                     if card.color == Color.WILD:
 
-                        logging.debug("A wild was played")
                         color = player.on_choose_wild_color(
                             self.pile, card_counts, card.type
                         )
+                        logging.debug("A wild was played: %s" % color)
                         # TODO: Make sure Color isn't Wild
                         card.color = color
 

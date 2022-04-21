@@ -27,6 +27,11 @@ class Card:
     def __repr__(self) -> str:
         return self.__str__()
 
+    def __eq__(self, other):
+        if isinstance(other, Card):
+            return self.type == other.type and self.color == other.color
+        return False
+
 
 if __name__ == "__main__":
     card = Card(Type.ZERO, Color.RED)

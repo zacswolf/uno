@@ -115,8 +115,8 @@ class BasicPlayer(Player):
     def on_choose_wild_color(self, pile, card_counts, card_type):
         # Play color player has the most
         return max(
-            set(c.color for c in self.hand),
-            key=[c.color for c in self.hand].count,
+            set(c.color for c in self.hand if c.color != Color.WILD),
+            key=[c.color for c in self.hand if c.color != Color.WILD].count,
             default=Color.RED,
         )
 
