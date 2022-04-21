@@ -25,7 +25,7 @@ class Game:
             self.players: list[Player] = []
             for player_str in args.players:
                 # Create player based on player str
-                self.players.append(str_to_player(player_str)())
+                self.players.append(str_to_player(player_str)(args))
 
             self.reset()
         except:
