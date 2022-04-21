@@ -22,31 +22,34 @@ class Game:
             elif self.num_players != len(args.players):
                 raise ValueError("num_players arg doesn't match players arg list")
 
-            self.deck = Deck(args.with_replacement)
-
             self.players: list[Player] = []
             for player_str in args.players:
                 # Create player based on player str
                 self.players.append(str_to_player(player_str)())
 
-            # Deal
-            for _ in range(args.num_cards):
-                for player in self.players:
-                    player.get_card(self.draw_card())
-            for player_idx, player in enumerate(self.players):
-                logging.info("%s: %s" % (player_idx, player.hand))
-
-            # Draw top card
-            self.pile = [self.draw_card()]
-            while self.pile[-1].type > Type.NINE:
-                self.pile.append(self.draw_card())
-
-            self.direction = Direction.CLOCKWISE
-            self.player_idx = 0  # Maybe make this random
-            self.turn_num = 0
+            self.reset()
         except:
             logging.exception("Fatal error in initalizing game", exc_info=True)
             raise
+
+    def reset(self):
+        self.deck = Deck(args.with_replacement)
+
+        # Deal
+        for _ in range(args.num_cards):
+            for player in self.players:
+                player.get_card(self.draw_card())
+        for player_idx, player in enumerate(self.players):
+            logging.info("%s: %s" % (player_idx, player.hand))
+
+        # Draw top card
+        self.pile = [self.draw_card()]
+        while self.pile[-1].type > Type.NINE:
+            self.pile.append(self.draw_card())
+
+        self.direction = Direction.CLOCKWISE
+        self.player_idx = 0  # Maybe make this random
+        self.turn_num = 0
 
     def draw_card(self) -> Card:
         if not self.deck.size():
@@ -71,6 +74,8 @@ class Game:
             game_over = False
             while not game_over:
                 self.turn_num += 1
+                if self.turn_num % 10 == 0:
+                    print("tn", self.turn_num)
                 card = self.turn()
 
                 next_player_idx = (self.player_idx + self.direction) % self.num_players
@@ -308,11 +313,12 @@ if __name__ == "__main__":
     )
 
     # Main
+    game = Game(args)
     winner_tracker = [0] * (args.num_players + 1)
     for game_num in range(args.num_games):
         logging.info("STARTING GAME %d" % game_num)
-        game = Game(args)
         winner_idx = game.run_game()
         winner_tracker[winner_idx] += 1
+        game.reset()
     print(winner_tracker)
     logging.info("Winner tracker: %s" % winner_tracker)
