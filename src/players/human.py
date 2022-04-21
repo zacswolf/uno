@@ -3,8 +3,8 @@ from enums import Color
 
 
 class HumanPlayer(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "human"

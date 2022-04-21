@@ -9,8 +9,8 @@ import random
 
 
 class RandomPlayer(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "random"
@@ -42,8 +42,8 @@ class RandomPlayer(Player):
 
 
 class NoobPlayer(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "noob"
@@ -82,8 +82,8 @@ class NoobPlayer(Player):
 
 
 class BasicPlayer(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "basic"
@@ -128,8 +128,8 @@ class BasicPlayer(Player):
 
 
 class DecentPlayer(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "decent"
@@ -205,8 +205,8 @@ class DecentPlayer(Player):
 
 
 class DecentPlayer2(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "decent2"
@@ -310,8 +310,8 @@ class DecentPlayer2(Player):
 
 
 class DecentPlayer3(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
 
     def get_name(self) -> str:
         return "decent3"
@@ -493,8 +493,8 @@ def bf_hard_streak(top_of_pile, hand, recurse_run=False):
 
 
 class DecentPlayer4(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
         self.wild_card_steak_color = None
 
     def get_name(self) -> str:

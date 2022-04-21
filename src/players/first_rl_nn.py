@@ -1,6 +1,5 @@
 from copy import copy
 import logging
-from typing import Iterable
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,7 +8,8 @@ from card import Card
 from enums import Color, Type
 
 from player import Player
-from players.common import get_ss_rep1
+from players.common.action_space import ASRep1
+from players.common.state_space import SSRep1
 
 
 class PolicyNet(torch.nn.Module):
@@ -34,24 +34,22 @@ class PolicyNet(torch.nn.Module):
     def forward(self, x):
         x = self.model(x)
 
-        # print(x)
         return x
 
 
 class FirstRLPlayer(Player):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, args) -> None:
+        super().__init__(args)
         self.wild_choice = None
 
-        # TODO: Fix this shit
-        self.SS_SIZE = 75
-        self.A_SIZE = 15 * 4 + 1  # plus one for the draw/noop
+        self.state_space = SSRep1(args)
+        self.action_space = ASRep1(args)
+        self.ss_size = self.state_space.size()
+        self.as_size = self.action_space.size()
 
-        self.net = PolicyNet(self.SS_SIZE, 128, self.A_SIZE)
+        self.net = PolicyNet(self.ss_size, 128, self.as_size)
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), betas=[0.9, 0.999])
-
-        self.was_card_rejected = False
 
     def get_name(self) -> str:
         return "firstrlplayer"
@@ -74,12 +72,7 @@ class FirstRLPlayer(Player):
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
-        action_idx = None
-        if not a:
-            action_idx = self.A_SIZE - 1  # Drawing/Noop
-        else:
-            assert a.color != Color.WILD
-            action_idx = a.color * (Type.DRAW4 + 1) + a.type
+        action_idx = self.action_space.card_to_idx(a)
 
         log_prob = self.net(s)[action_idx]
 
@@ -91,39 +84,42 @@ class FirstRLPlayer(Player):
         loss.backward()  # compute grad
         self.optimizer.step()  # apply grad
 
-    def eval(self, s):  # returns action
-
+    def get_action(self, s):  # returns action
         self.net.eval()
 
         s = Variable(torch.from_numpy(s).type(torch.float32))
-        r = self.net(s)
+        action_dist = self.net(s)
 
-        action_idx = np.random.choice(np.arange(self.A_SIZE), p=r.detach().numpy())
-        # logging.info("act_idx %s" % action_idx)
-        # Maps action idx to card
-        if action_idx != self.A_SIZE - 1:
-            color = action_idx // (Type.DRAW4 + 1)
-            c_type = action_idx % (Type.DRAW4 + 1)
-            c = Card(Type(c_type), Color(color))
-            # logging.info("act_c %s" % c)
-            return c
-        return None
+        # Get action from distribution
+        action_idx = np.random.choice(
+            np.arange(self.as_size), p=action_dist.detach().numpy()
+        )
+
+        return self.action_space.idx_to_card(action_idx)
 
     def on_turn(self, pile, card_counts):
 
         top_of_pile = pile[-1]
 
-        valid_card = False
-        while not valid_card:
-            self.wild_choice = None
-            # get statespace
-            state = get_ss_rep1(self.hand, top_of_pile, card_counts)
-            assert state.shape[0] == self.SS_SIZE
+        is_valid = False
+        card_picked = None
 
-            # get card
-            og_card = self.eval(state)
+        while not is_valid:
+            self.wild_choice = None
+
+            # Get state
+            state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
+            assert state.shape[0] == self.ss_size
+
+            # Get card
+            og_card = self.get_action(state)
+
+            if og_card:
+                assert og_card.color != Color.WILD
+
             # logging.info("CC: %s" % og_card)
             card = copy(og_card)
+
             if card and card.type >= Type.CHANGECOLOR:
                 self.wild_choice = card.color
                 card.color = Color.WILD
@@ -132,7 +128,8 @@ class FirstRLPlayer(Player):
             if card is None:
                 # draw
                 # okay
-                valid_card = True
+                is_valid = True
+                card_picked = card
                 self.update(state, og_card, 1, -1)
             elif card not in self.hand:
                 # bad
@@ -141,14 +138,15 @@ class FirstRLPlayer(Player):
                 # bad
                 self.update(state, og_card, 1, -1)
             else:
-                valid_card = True
                 # good
+                is_valid = True
+                card_picked = card
                 self.update(state, og_card, 1, 10)
             # print("%s \tTP: %s \tCD: %s" % (valid_card, top_of_pile, card))
             # if valid_card:
-            logging.info("%s \tTP: %s \tCD: %s" % (bool(valid_card), top_of_pile, card))
+            logging.info("%s \tTP: %s \tCD: %s" % (is_valid, top_of_pile, card))
 
-        return card
+        return card_picked
 
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
@@ -160,8 +158,6 @@ class FirstRLPlayer(Player):
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
-        # Hurt reward
-        self.was_card_rejected = True
 
     def on_finish(self, winner) -> None:
         # Maybe hurt reward
