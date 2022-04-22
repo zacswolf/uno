@@ -7,6 +7,4 @@ def act_filter(hand, card: Card | None, top_of_pile: Card):
     if card is None:
         return True
     else:
-        if card.type >= Type.CHANGECOLOR:
-            card = Card(card.type, Color.WILD)
         return card.can_play_on(top_of_pile) and card in hand
