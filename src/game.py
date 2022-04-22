@@ -11,7 +11,7 @@ from player import str_to_player, Player
 class Game:
     def __init__(self, args: Namespace) -> None:
         try:
-            logging.info(msg="args: %s" % args)
+            logging.info(f"args: {args}")
 
             # Store args
             self.num_players = args.num_players
@@ -23,9 +23,9 @@ class Game:
                 raise ValueError("num_players arg doesn't match players arg list")
 
             self.players: list[Player] = []
-            for player_str in args.players:
+            for player_idx, player_str in enumerate(args.players):
                 # Create player based on player str
-                self.players.append(str_to_player(player_str)(args))
+                self.players.append(str_to_player(player_str)(player_idx, args))
 
             self.reset()
         except:
@@ -44,12 +44,14 @@ class Game:
             for player in self.players:
                 player.get_card(self.draw_card())
         for player_idx, player in enumerate(self.players):
-            logging.info("%s: %s" % (player_idx, player.hand))
+            logging.info(f"{player_idx}: {player.hand}")
 
         # Draw top card
         self.pile = [self.draw_card()]
         while self.pile[-1].type > Type.NINE:
             self.pile.append(self.draw_card())
+
+        logging.info(f"Top Card: {self.pile[-1]}")
 
         self.direction = Direction.CLOCKWISE
         self.player_idx = 0  # Maybe make this random
@@ -66,19 +68,21 @@ class Game:
                 # Players are holding all of the cards
                 raise Exception("Shitty players")
         card = self.deck.draw_card()
-        assert bool(card.type >= Type.CHANGECOLOR) != bool(card.color != Color.WILD), (
-            "Wild card has a color: %s" % card
-        )
+        assert bool(card.type >= Type.CHANGECOLOR) != bool(
+            card.color != Color.WILD
+        ), f"Wild card has a color: {card}"
         return card
 
     def run_game(self) -> None:
         """Run the Game"""
         winner_idx = -1
+        num_turns = -1
+        winner_str = ""
         try:
             game_over = False
             while not game_over:
                 self.turn_num += 1
-                if self.turn_num % 10 == 0:
+                if self.turn_num % 100 == 0:
                     print("tn", self.turn_num)
                 card = self.turn()
 
@@ -124,9 +128,7 @@ class Game:
 
                     if skip:
                         # Skip logic
-                        logging.debug(
-                            "The next player at idx %s get's skipped" % next_player_idx
-                        )
+                        logging.debug(f"Skipped {next_player_idx}")
                         next_player_idx = (
                             next_player_idx + self.direction
                         ) % self.num_players
@@ -135,22 +137,8 @@ class Game:
                     # Current Player won the game
                     game_over = True
                     winner_idx = self.player_idx
-                    logging.info(
-                        "Game over! Winner deats: turn_num: %s, player_idx: %s, plyr_str: %s"
-                        % (
-                            self.turn_num,
-                            self.player_idx,
-                            self.players[self.player_idx].get_name(),
-                        )
-                    )
-                    print(
-                        "Game over! Winner deats: turn_num: %s, player_idx: %s, plyr_str: %s"
-                        % (
-                            self.turn_num,
-                            self.player_idx,
-                            self.players[self.player_idx].get_name(),
-                        )
-                    )
+                    num_turns = self.turn_num
+                    winner_str = self.players[self.player_idx].get_name()
 
                     # Notify players for feedback
                     for (idx, player) in enumerate(self.players):
@@ -170,9 +158,7 @@ class Game:
             # Rethrow exception
             raise
 
-        print("Game over")
-
-        return winner_idx
+        return winner_idx, num_turns, winner_str
 
     def turn(self) -> Card | None:
         """A turn of the game
@@ -229,8 +215,14 @@ class Game:
                             self.pile, card_counts, card.type
                         )
                         logging.debug("A wild was played: %s" % color)
-                        # TODO: Make sure Color isn't Wild
+
+                        # Make sure Color isn't Wild
+                        assert color != Color.WILD
+
                         card.color = color
+                    elif card.type >= Type.CHANGECOLOR:
+                        # Wild is already colored
+                        logging.debug("A wild was played: %s" % card.color)
 
                     logging.debug(
                         "Card played: %s, Top of pile: %s" % (card, self.pile[-1])
@@ -297,17 +289,47 @@ if __name__ == "__main__":
         default=1,
         help="Number of games to play",
     )
+    my_parser.add_argument(
+        "--value_net",
+        nargs="+",
+        help="File locations of value_net to initialize with",
+    )
+    my_parser.add_argument(
+        "--policy_net",
+        nargs="+",
+        help="File locations of policy_net to initialize with",
+    )
 
     args = my_parser.parse_args()
 
     # assert args.num_players == 2
 
+    # Add custom values to the namespace
+    d = vars(args)
+    d["root_file"] = os.path.dirname(__file__)
+    d["run_name"] = datetime.now().strftime("%m_%d_%H_%M_%S")
+    d["model_dir"] = os.path.join(args.root_file, "../models/")
+
+    # Process value_net
+    if args.value_net:
+        assert len(args.value_net) <= len(args.players)
+        if len(args.value_net) < len(args.players):
+            # Pad value net arg
+            d["value_net"] += [""] * (len(args.players) - len(args.value_net))
+    else:
+        d["value_net"] = [""] * len(args.players)
+
+    # Process policy_net
+    if args.policy_net:
+        assert len(args.policy_net) <= len(args.players)
+        if len(args.policy_net) < len(args.players):
+            # Pad policy net arg
+            d["policy_net"] += [""] * (len(args.players) - len(args.policy_net))
+    else:
+        d["policy_net"] = [""] * len(args.players)
+
     # Setup logging
-    log_file = os.path.join(
-        os.path.dirname(__file__),
-        "../logs/",
-        datetime.now().strftime("log_%m_%d_%H_%M_%S.log"),
-    )
+    log_file = os.path.join(args.root_file, "../logs/", f"log_{args.run_name}.log")
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
@@ -321,8 +343,11 @@ if __name__ == "__main__":
     winner_tracker = [0] * (args.num_players + 1)
     for game_num in range(args.num_games):
         logging.info("STARTING GAME %d" % game_num)
-        winner_idx = game.run_game()
-        winner_tracker[winner_idx] += 1
         game.reset()
+        winner_idx, num_turns, winner_str = game.run_game()
+        winner_tracker[winner_idx] += 1
+        game_res_str = f"Game over! {game_num}:{winner_tracker} Winner deats: player_idx: {winner_idx}, plyr_str: {winner_str}, turn_num: {num_turns}"
+        logging.info(game_res_str)
+        print(game_res_str)
     print(winner_tracker)
-    logging.info("Winner tracker: %s" % winner_tracker)
+    logging.info(f"Winner tracker: {winner_tracker}")

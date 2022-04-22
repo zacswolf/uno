@@ -19,6 +19,10 @@ class Card:
             return True
         if self.color == Color.WILD or card.color == Color.WILD:
             return True
+
+        if self.type >= Type.CHANGECOLOR:
+            return True
+
         return False
 
     def __str__(self) -> str:
@@ -29,6 +33,10 @@ class Card:
 
     def __eq__(self, other):
         if isinstance(other, Card):
+            if self.type >= Type.CHANGECOLOR:
+                # Wild card so we ignore the color
+                return self.type == other.type
+
             return self.type == other.type and self.color == other.color
         return False
 

@@ -5,8 +5,10 @@ from abc import ABC, abstractmethod
 
 
 class Player(ABC):
-    def __init__(self, args) -> None:
+    def __init__(self, player_idx:int, args) -> None:
         self.hand: list[Card] = []
+
+        self.player_idx = player_idx
     
     @staticmethod
     @abstractmethod
@@ -114,15 +116,18 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
         case "human":
             from players.human import HumanPlayer
             return HumanPlayer
-        case "basic":
-            from players.non_rl import BasicPlayer
-            return BasicPlayer
-        case "noob":
-            from players.non_rl import NoobPlayer
-            return NoobPlayer
+        case "draw":
+            from players.non_rl import DrawPlayer
+            return DrawPlayer
         case "random":
             from players.non_rl import RandomPlayer
             return RandomPlayer
+        case "noob":
+            from players.non_rl import NoobPlayer
+            return NoobPlayer
+        case "basic":
+            from players.non_rl import BasicPlayer
+            return BasicPlayer
         case "decent":
             from players.non_rl import DecentPlayer
             return DecentPlayer

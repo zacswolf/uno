@@ -39,8 +39,8 @@ class PolicyNet(torch.nn.Module):
 
 
 class FirstRLPlayer(Player):
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, player_idx, args) -> None:
+        super().__init__(player_idx, args)
         self.wild_choice = None
 
         self.state_space = SSRep1(args)
@@ -168,8 +168,8 @@ class FirstRLPlayer(Player):
 
 
 class SecondRLPlayer(Player):
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, player_idx, args) -> None:
+        super().__init__(player_idx, args)
         self.wild_choice = None
 
         self.state_space = SSRep1(args)
