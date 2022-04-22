@@ -1,129 +1,45 @@
-from copy import copy
 import logging
-import numpy as np
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-from card import Card
-from enums import Color, Type
+from enums import Color
 
 from player import Player
+from players.common import policy_nets
 from players.common.action_space import ASRep1
-from players.common.misc import act_filter
 from players.common.state_space import SSRep1
-
-
-class PolicyNet(torch.nn.Module):
-    def __init__(self, n_feature, n_hidden, n_output):
-        super(PolicyNet, self).__init__()
-
-        self.model = nn.Sequential(
-            nn.Linear(n_feature, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_output),
-            nn.Softmax(-1),
-        )
-
-    def forward(self, x):
-        x = self.model(x)
-
-        return x
 
 
 class FirstRLPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-        self.wild_choice = None
 
         self.state_space = SSRep1(args)
         self.action_space = ASRep1(args)
         self.ss_size = self.state_space.size()
         self.as_size = self.action_space.size()
 
-        self.net = PolicyNet(self.ss_size, 128, self.as_size)
-
-        self.optimizer = torch.optim.Adam(self.net.parameters(), betas=[0.9, 0.999])
+        self.policy = policy_nets.PolicyNet0(
+            self.action_space, self.state_space.size(), args, player_idx
+        )
 
     def get_name(self) -> str:
         return "firstrlplayer"
 
-    def update(self, s, a: Card | None, gamma_t, reward):
-        """
-        s: state S_t
-        a: action A_t
-        gamma_t: gamma^t
-            1
-        reward: G-v(S_t,w) or just G or just R'
-            -1 if card is invalid for any reason
-            1 of card is valid
-        """
-
-        self.net.train()
-
-        s = Variable(torch.from_numpy(s).type(torch.float32))
-        # gamma_t = Variable(torch.FloatTensor([gamma_t]))
-        reward = Variable(torch.FloatTensor([reward]))
-
-        # Maps card to action idx
-        action_idx = self.action_space.card_to_idx(a)
-
-        log_prob = self.net(s)[action_idx]
-
-        # print(prediction, G)
-        # -1 * gamma_t * reward * log_prob
-        loss = -1 * reward * log_prob
-
-        self.optimizer.zero_grad()  # clear grad
-        loss.backward()  # compute grad
-        self.optimizer.step()  # apply grad
-
-    def get_action(self, s):  # returns action
-        self.net.eval()
-
-        s = Variable(torch.from_numpy(s).type(torch.float32))
-        action_dist = self.net(s)
-
-        # Get action from distribution
-        action_idx = np.random.choice(
-            np.arange(self.as_size), p=action_dist.detach().numpy()
-        )
-
-        return self.action_space.idx_to_card(action_idx)
-
     def on_turn(self, pile, card_counts):
-
         top_of_pile = pile[-1]
 
         is_valid = False
         card_picked = None
 
         while not is_valid:
-            self.wild_choice = None
 
             # Get state
             state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
             assert state.shape[0] == self.ss_size
 
             # Get card
-            og_card = self.get_action(state)
+            card = self.policy.get_action(self.hand, state, top_of_pile)
 
-            if og_card:
-                assert og_card.color != Color.WILD
-
-            # logging.info("CC: %s" % og_card)
-            card = copy(og_card)
-
-            if card and card.type >= Type.CHANGECOLOR:
-                self.wild_choice = card.color
-                card.color = Color.WILD
+            if card:
+                assert card.color != Color.WILD
 
             # test card
             if card is None:
@@ -131,21 +47,21 @@ class FirstRLPlayer(Player):
                 # okay
                 is_valid = True
                 card_picked = card
-                self.update(state, og_card, 1, -1)
+                self.policy.update(state, card, 1, -1)
             elif card not in self.hand:
                 # bad
-                self.update(state, og_card, 1, -1)
+                self.policy.update(state, card, 1, -1)
             elif not card.can_play_on(top_of_pile):
                 # bad
-                self.update(state, og_card, 1, -1)
+                self.policy.update(state, card, 1, -1)
             else:
                 # good
                 is_valid = True
                 card_picked = card
-                self.update(state, og_card, 1, 10)
+                self.policy.update(state, card, 1, 10)
             # print("%s \tTP: %s \tCD: %s" % (valid_card, top_of_pile, card))
             # if valid_card:
-            logging.info("%s \tTP: %s \tCD: %s" % (is_valid, top_of_pile, card))
+            logging.info(f"{is_valid} \tTP: {top_of_pile} \tCD: {card}")
 
         if card_picked:
             self.hand.remove(card_picked)
@@ -156,8 +72,7 @@ class FirstRLPlayer(Player):
 
     def on_choose_wild_color(self, pile, card_counts, card_type):
         # Choose color randomly
-        assert self.wild_choice != None
-        return self.wild_choice
+        assert False, "This model should always color the wild card on turn"
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
@@ -177,138 +92,56 @@ class SecondRLPlayer(Player):
         self.ss_size = self.state_space.size()
         self.as_size = self.action_space.size()
 
-        self.net = PolicyNet(self.ss_size, 128, self.as_size)
-
-        self.optimizer = torch.optim.Adam(self.net.parameters(), betas=[0.9, 0.999])
+        self.policy = policy_nets.PolicyNet1(
+            self.action_space, self.state_space.size(), args, player_idx
+        )
 
     def get_name(self) -> str:
         return "secrlplayer"
-
-    def update(self, s, a: Card | None, gamma_t, reward):
-        """
-        s: state S_t
-        a: action A_t
-        gamma_t: gamma^t
-            1
-        reward: G-v(S_t,w) or just G or just R'
-            -1 if card is invalid for any reason
-            1 of card is valid
-        """
-
-        self.net.train()
-
-        s = Variable(torch.from_numpy(s).type(torch.float32))
-        # gamma_t = Variable(torch.FloatTensor([gamma_t]))
-        reward = Variable(torch.FloatTensor([reward]))
-
-        # Maps card to action idx
-        action_idx = self.action_space.card_to_idx(a)
-
-        log_prob = self.net(s)[action_idx]
-
-        # print(prediction, G)
-        # -1 * gamma_t * reward * log_prob
-        loss = -1 * reward * log_prob
-
-        self.optimizer.zero_grad()  # clear grad
-        loss.backward()  # compute grad
-        self.optimizer.step()  # apply grad
-
-    def get_action(self, state, top_of_pile: Card):  # returns action
-        self.net.eval()
-
-        # Get action dist from state
-        state = torch.from_numpy(state).type(torch.float32)
-        action_dist = self.net(state).detach().numpy()
-
-        # Morph action dist to only include valid cards
-
-        # Get valid action idxs
-        assert self.as_size == action_dist.shape[0]
-        valid_actions_idxs = [
-            action_idx
-            for action_idx in range(self.as_size)
-            if act_filter(
-                self.hand, self.action_space.idx_to_card(action_idx), top_of_pile
-            )
-        ]
-
-        valid_action_dist = action_dist[valid_actions_idxs]
-
-        # Normalize
-        dist_sum = np.sum(valid_action_dist)
-        if dist_sum == 0:
-            valid_action_dist = None
-        else:
-            valid_action_dist = valid_action_dist / dist_sum
-
-        # Sample
-        action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
-
-        # Convert to card
-        return self.action_space.idx_to_card(action_idx)
 
     def on_turn(self, pile, card_counts):
 
         top_of_pile = pile[-1]
 
-        is_valid = False
-        card_picked = None
+        # Get state
+        state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
+        assert state.shape[0] == self.ss_size
 
-        while not is_valid:
-            self.wild_choice = None
+        # Get card
+        card = self.policy.get_action(self.hand, state, top_of_pile)
 
-            # Get state
-            state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
-            assert state.shape[0] == self.ss_size
+        if card:
+            assert card.color != Color.WILD
 
-            # Get card
-            og_card = self.get_action(state, top_of_pile)
+        # test card
+        if card is None:
+            # draw
+            # okay
+            self.policy.update(state, card, 1, -1)
+        elif card not in self.hand:
+            # bad
+            # self.policy.update(state, card, 1, -1)
+            assert False, "Our policy filters out invalid actions"
+        elif not card.can_play_on(top_of_pile):
+            # bad
+            # self.policy.update(state, card, 1, -1)
+            assert False, "Our policy filters out invalid actions"
+        else:
+            # good
+            self.policy.update(state, card, 1, 1)
+        # if valid_card:
+        logging.info(f"TP: {top_of_pile} \tCD: {card}")
 
-            if og_card:
-                assert og_card.color != Color.WILD
-
-            # logging.info("CC: %s" % og_card)
-            card = copy(og_card)
-
-            if card and card.type >= Type.CHANGECOLOR:
-                self.wild_choice = card.color
-                card.color = Color.WILD
-
-            # test card
-            if card is None:
-                # draw
-                # okay
-                is_valid = True
-                card_picked = card
-                self.update(state, og_card, 1, -1)
-            elif card not in self.hand:
-                # bad
-                self.update(state, og_card, 1, -1)
-                assert False
-            elif not card.can_play_on(top_of_pile):
-                # bad
-                self.update(state, og_card, 1, -1)
-            else:
-                # good
-                is_valid = True
-                card_picked = card
-                self.update(state, og_card, 1, 1)
-            # print("%s \tTP: %s \tCD: %s" % (valid_card, top_of_pile, card))
-            # if valid_card:
-            logging.info("%s \tTP: %s \tCD: %s" % (is_valid, top_of_pile, card))
-
-        if card_picked:
-            self.hand.remove(card_picked)
-        return card_picked
+        if card:
+            self.hand.remove(card)
+        return card
 
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
     def on_choose_wild_color(self, pile, card_counts, card_type):
         # Choose color randomly
-        assert self.wild_choice != None
-        return self.wild_choice
+        assert False, "This model should always color the wild card on turn"
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
