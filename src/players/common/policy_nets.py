@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as f
 from torch.autograd import Variable
 from card import Card
 from players.common.misc import act_filter
@@ -87,7 +88,7 @@ class PolicyNet(ABC):
         self.net.load_state_dict(torch.load(policy_model_file))
 
 
-class PolicyNet0(PolicyNet):
+class PolNetBasic(PolicyNet):
     """Policy Net that doesn't check if a card is valid"""
 
     def __init__(
@@ -155,10 +156,10 @@ class PolicyNet0(PolicyNet):
         action_idx = np.random.choice(np.arange(self.as_size), p=action_dist)
 
         # Convert to card
-        return self.action_space.idx_to_card(action_idx)
+        return self.action_space.idx_to_card(action_idx, top_of_pile)
 
 
-class PolicyNet1(PolicyNet):
+class PolNetValActions(PolicyNet):
     """Policy Net that checks if a card is valid"""
 
     def __init__(
@@ -170,6 +171,10 @@ class PolicyNet1(PolicyNet):
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
             nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
             nn.LeakyReLU(),
@@ -247,3 +252,130 @@ class PolicyNet1(PolicyNet):
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
+
+
+class PolNetValActionsSoftmax(PolicyNet):
+    """Policy Net that checks if a card is valid and does a smart softmax"""
+
+    def __init__(
+        self, action_space: ActionSpace, ss_size: int, args, player_idx
+    ) -> None:
+        super().__init__(action_space, ss_size, args, player_idx)
+
+        n_hidden = 128
+
+        self.net = nn.Sequential(
+            nn.Linear(self.ss_size, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, self.as_size),
+        )
+
+        self.optimizer = torch.optim.Adam(
+            self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
+        )
+
+        if self.policy_load:
+            self.load(self.policy_load)
+
+    def update(self, wrapped_state, action, gamma_t, reward):
+        """
+        wrapped_state: wrapped_state dict that contains S_t, hand_t, and top_of_pile_t
+        action: action A_t
+        gamma_t: gamma^t
+        reward: G-v(S_t,w) or just G or just R'
+        """
+
+        self.net.train()
+
+        state = wrapped_state["state"]
+        hand = wrapped_state["hand"]
+        top_of_pile = wrapped_state["top_of_pile"]
+
+        state = Variable(torch.from_numpy(state).type(torch.float32))
+        # gamma_t = Variable(torch.FloatTensor([gamma_t]))
+        reward = Variable(torch.FloatTensor([reward]))
+
+        # Maps card to action idx
+        action_idx = self.action_space.card_to_idx(
+            action, hand=hand, top_of_pile=top_of_pile
+        )
+
+        check_card = self.action_space.idx_to_card(
+            action_idx, hand=hand, top_of_pile=top_of_pile
+        )
+        assert (
+            action == check_card
+        ), f"action space is not lineing up {action} : {check_card}"
+
+        action_vals = self.net(state)
+        valid_actions_bool_mask = [
+            act_filter(
+                hand,
+                self.action_space.idx_to_card(
+                    action_idx, hand=hand, top_of_pile=top_of_pile
+                ),
+                top_of_pile,
+            )
+            for action_idx in range(self.as_size)
+        ]
+        action_vals[valid_actions_bool_mask] = f.softmax(
+            action_vals[valid_actions_bool_mask], -1
+        )
+        action_vals[not valid_actions_bool_mask] = 0
+
+        log_prob = action_vals[action_idx]
+        # -1 * gamma_t * reward * log_prob
+        loss = -1 * reward * log_prob
+
+        self.optimizer.zero_grad()  # clear grad
+        loss.backward()  # compute grad
+        self.optimizer.step()  # apply grad
+
+    def get_action(self, hand, state, top_of_pile: Card):  # returns action
+        self.net.eval()
+
+        # Get action dist from state
+        state = torch.from_numpy(state).type(torch.float32)
+        action_vals = self.net(state).detach()  # .numpy()
+
+        # Morph action dist to only include valid cards
+
+        # Get valid action idxs
+        assert self.as_size == action_vals.shape[0]
+        valid_actions_idxs = [
+            action_idx
+            for action_idx in range(self.as_size)
+            if act_filter(
+                hand,
+                self.action_space.idx_to_card(
+                    action_idx, hand=hand, top_of_pile=top_of_pile
+                ),
+                top_of_pile,
+            )
+        ]
+
+        # Turn into a valid distribution using invalid action masking
+        # https://costa.sh/blog-a-closer-look-at-invalid-action-masking-in-policy-gradient-algorithms.html
+        valid_action_vals = action_vals[valid_actions_idxs]
+
+        valid_action_dist = f.softmax(valid_action_vals, -1).numpy()
+
+        # Sample
+        action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
+
+        # Convert to card
+        return self.action_space.idx_to_card(
+            action_idx, hand=hand, top_of_pile=top_of_pile
+        )

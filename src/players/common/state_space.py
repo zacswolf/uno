@@ -3,12 +3,19 @@ from card import Card
 import numpy as np
 
 from enums import Color, Type
+from players.common.misc import color_map
 
 
 class StateSpace(ABC):
     def __init__(self, args) -> None:
         super().__init__()
         self.num_players = args.num_players
+
+        self.NUM_TYPES = Type.DRAW4 + 1
+        self.NUM_TYPES_NON_WILD = Type.CHANGECOLOR
+        self.NUM_TYPES_WILD = Type.DRAW4 - Type.CHANGECOLOR + 1
+        self.NUM_COLORS = Color.WILD + 1
+        self.NUM_COLORS_NON_WILD = Color.WILD
 
     @abstractmethod
     def size(self) -> int:
@@ -22,18 +29,16 @@ class StateSpace(ABC):
 
 
 class SSRep1(StateSpace):
+    """We consider this to be a near full representation of the state space"""
+
     def __init__(self, args) -> None:
         super().__init__(args)
-        self.NUM_TYPES = 15
-        self.NUM_TYPES_NON_WILD = 13
-        self.NUM_COLORS = 5
-        self.NUM_COLORS_NON_WILD = 4
 
         self.ss_length = (
             self.NUM_COLORS_NON_WILD
             + self.NUM_TYPES
             + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
-            + (self.NUM_TYPES - self.NUM_TYPES_NON_WILD)  # 2
+            + self.NUM_TYPES_WILD
             + self.num_players
         )
         assert self.ss_length == 73 + self.num_players
@@ -77,6 +82,68 @@ class SSRep1(StateSpace):
                 ss[
                     self.NUM_COLORS_NON_WILD
                     + self.NUM_TYPES
+                    + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                    + (card.type - Type.CHANGECOLOR)
+                ] += 1
+
+        # card counts
+        ss[-len(card_counts) :] = card_counts
+
+        return ss
+
+
+class SSRep2(StateSpace):
+    """We consider this to be a near full representation of the state space with color rotation
+    SSRep1 except with top_of_pile based misc.color_map and no top pile color"""
+
+    def __init__(self, args) -> None:
+        super().__init__(args)
+
+        self.ss_length = (
+            self.NUM_TYPES
+            + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+            + (self.NUM_TYPES - self.NUM_TYPES_NON_WILD)  # 2
+            + self.num_players
+        )
+        assert self.ss_length == 69 + self.num_players
+
+    def size(self) -> int:
+        return self.ss_length
+
+    def get_state(self, hand: list[Card], top_of_pile: Card, card_counts: list[int]):
+        # ASSUME: 2 players only
+
+        # top of pile [onehot type]
+        #       colors are in enum order no wild
+        #       type is in enum order
+        # hand: a count array for every color/type combo
+        #       color enum pri, type enum second
+        # card counts [cc0: me, cc1]
+        #       in rotation order
+
+        # length should be num_players + 15types + 4*13 + 2
+        assert len(card_counts) == self.num_players
+
+        ss = np.zeros(self.ss_length)
+
+        # top of pile
+        assert top_of_pile.color != Color.WILD
+
+        ss[top_of_pile.type] = 1
+
+        # Hand
+        for card in hand:
+            if card.color != Color.WILD:
+                assert (card.type != Type.CHANGECOLOR) and (card.type != Type.DRAW4)
+                ss[
+                    self.NUM_TYPES
+                    + color_map(card.color, top_of_pile.color) * self.NUM_TYPES_NON_WILD
+                    + card.type
+                ] += 1
+            else:
+                assert (card.type == Type.CHANGECOLOR) or (card.type == Type.DRAW4)
+                ss[
+                    self.NUM_TYPES
                     + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
                     + (card.type - Type.CHANGECOLOR)
                 ] += 1
