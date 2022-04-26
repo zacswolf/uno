@@ -11,13 +11,18 @@ class FirstRLPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
+        self.num_games = args.num_games
+        self.game_num = 0
+
+        self.update = not args.no_update
+
         self.state_space = SSRep1(args)
         self.action_space = ASRep1(args)
         self.ss_size = self.state_space.size()
         self.as_size = self.action_space.size()
 
-        self.policy = policy_nets.PolicyNet0(
-            self.action_space, self.state_space.size(), args, player_idx
+        self.policy = policy_nets.PolNetBasic(
+            self.action_space, self.ss_size, args, player_idx
         )
 
     def get_name(self) -> str:
@@ -79,21 +84,26 @@ class FirstRLPlayer(Player):
 
     def on_finish(self, winner) -> None:
         # Maybe hurt reward
-        return
+        self.game_num += 1
+        if self.game_num == self.num_games:
+            # Save models
+            self.policy.save()
 
 
 class SecondRLPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-        self.wild_choice = None
+
+        self.num_games = args.num_games
+        self.game_num = 0
 
         self.state_space = SSRep1(args)
         self.action_space = ASRep1(args)
         self.ss_size = self.state_space.size()
         self.as_size = self.action_space.size()
 
-        self.policy = policy_nets.PolicyNet1(
-            self.action_space, self.state_space.size(), args, player_idx
+        self.policy = policy_nets.PolNetValActions(
+            self.action_space, self.ss_size, args, player_idx
         )
 
     def get_name(self) -> str:
@@ -148,4 +158,7 @@ class SecondRLPlayer(Player):
 
     def on_finish(self, winner) -> None:
         # Maybe hurt reward
-        return
+        self.game_num += 1
+        if self.game_num == self.num_games:
+            # Save models
+            self.policy.save()

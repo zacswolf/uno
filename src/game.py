@@ -16,6 +16,7 @@ class Game:
             # Store args
             self.num_players = args.num_players
             self.skip_draw = not args.no_draw_skip
+            self.alternate = args.alternate
 
             if self.num_players < 2 or self.num_players > 10:
                 raise ValueError("Invalid number of players")
@@ -27,12 +28,12 @@ class Game:
                 # Create player based on player str
                 self.players.append(str_to_player(player_str)(player_idx, args))
 
-            self.reset()
+            # self.reset(0)
         except:
             logging.exception("Fatal error in initalizing game", exc_info=True)
             raise
 
-    def reset(self):
+    def reset(self, game_num: int):
         self.deck = Deck(args.with_replacement)
 
         # Clear hands
@@ -54,7 +55,10 @@ class Game:
         logging.info(f"Top Card: {self.pile[-1]}")
 
         self.direction = Direction.CLOCKWISE
-        self.player_idx = 0  # Maybe make this random
+        if self.alternate:
+            self.player_idx = game_num % len(self.players)
+        else:
+            self.player_idx = 0
         self.turn_num = 0
 
     def draw_card(self) -> Card:
@@ -299,6 +303,16 @@ if __name__ == "__main__":
         nargs="+",
         help="File locations of policy_net to initialize with",
     )
+    my_parser.add_argument(
+        "--no_update",
+        action="store_true",
+        help="Don't update any of the rl bots, just evaluate",
+    )
+    my_parser.add_argument(
+        "--alternate",
+        action="store_true",
+        help="Alternate which player starts first",
+    )
 
     args = my_parser.parse_args()
 
@@ -343,7 +357,7 @@ if __name__ == "__main__":
     winner_tracker = [0] * (args.num_players + 1)
     for game_num in range(args.num_games):
         logging.info("STARTING GAME %d" % game_num)
-        game.reset()
+        game.reset(game_num)
         winner_idx, num_turns, winner_str = game.run_game()
         winner_tracker[winner_idx] += 1
         game_res_str = f"Game over! {game_num}:{winner_tracker} Winner deats: player_idx: {winner_idx}, plyr_str: {winner_str}, turn_num: {num_turns}"
