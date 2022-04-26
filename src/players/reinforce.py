@@ -3,6 +3,7 @@ from player import Player
 from players.common import policy_nets, value_nets
 from players.common.action_space import ASRep1
 from players.common.state_space import SSRep1
+from enums import Color
 
 
 class Reinforce1(Player):
@@ -41,9 +42,12 @@ class Reinforce1(Player):
         # Test validity card
         if card is not None:
             assert card in self.hand
+            assert card.color != Color.WILD
             assert card.can_play_on(top_of_pile)
+            self.action_history.append(card)
+        else:
+            self.action_history.append(None)
 
-        self.action_history.append(card)
         assert len(self.state_history) == len(self.action_history)
 
         # Save Reward
@@ -85,7 +89,7 @@ class Reinforce1(Player):
             # G = reward
             # G = sum(pow(gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
             G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
-
+            print(str(t) + " " + str(a))
             delta = G - self.value.get_value(s)
             self.value.update(s, G)
             self.policy.update(s, a, pow(gamma, t), delta)
