@@ -7,7 +7,7 @@ import torch.nn.functional as f
 from torch.autograd import Variable
 from card import Card
 from load_args import ArgsGameShared, ArgsPlayer
-from players.common.misc import act_filter
+from players.common.misc import act_filter, sample
 
 from players.common.action_space import ActionSpace
 
@@ -38,13 +38,12 @@ class PolicyNet(ABC):
 
     @abstractmethod
     # Note: params probably wont generalize to all policy nets
-    def update(self, state, action: Card | None, gamma_t: float, reward: float) -> None:
+    def update(self, state, action: Card | None, reward: float) -> None:
         """Update policy of choosing action while in state state
 
         Args:
             state (_type_): State that's in state_space
             action (Card | None): Action played on state
-            gamma_t (float): Discount factor ^t
             reward (float): Reward
 
         Raises:
@@ -75,7 +74,12 @@ class PolicyNet(ABC):
         Args:
             tag (str, optional): Any tags to be included in the file name. Defaults to "".
         """
-        policy_model_file = os.path.join(
+        policy_model_file = None
+        if self.policy_load:
+            # Saves to same file loaded in
+            policy_model_file = os.path.join(self.model_dir, self.policy_load)
+        else:
+            policy_model_file = os.path.join(
             self.model_dir,
             f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt",
         )
@@ -125,25 +129,22 @@ class PolNetBasic(PolicyNet):
         if self.policy_load:
             self.load(self.policy_load)
 
-    def update(self, state, action, gamma_t, reward):
+    def update(self, state, action, reward):
         """
         state: state S_t
         action: action A_t
-        gamma_t: gamma^t
         reward: G-v(S_t,w) or just G or just R'
         """
 
         self.net.train()
 
         state = Variable(torch.from_numpy(state).type(torch.float32))
-        # gamma_t = Variable(torch.FloatTensor([gamma_t]))
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
         action_idx = self.action_space.card_to_idx(action)
 
         log_prob = self.net(state)[action_idx]
-        # -1 * gamma_t * reward * log_prob
         loss = -1 * reward * log_prob
 
         self.optimizer.zero_grad()  # clear grad
@@ -157,7 +158,8 @@ class PolNetBasic(PolicyNet):
         state = torch.from_numpy(state).type(torch.float32)
         action_dist = self.net(state).detach().numpy()
 
-        # Sample
+        # Sample 
+        # TODO: Not using sample method because we did it differently
         action_idx = np.random.choice(np.arange(self.as_size), p=action_dist)
 
         # Convert to card
@@ -200,25 +202,22 @@ class PolNetValActions(PolicyNet):
         if self.policy_load:
             self.load(self.policy_load)
 
-    def update(self, state, action, gamma_t, reward):
+    def update(self, state, action, reward):
         """
         state: state S_t
         action: action A_t
-        gamma_t: gamma^t
         reward: G-v(S_t,w) or just G or just R'
         """
 
         self.net.train()
 
         state = Variable(torch.from_numpy(state).type(torch.float32))
-        # gamma_t = Variable(torch.FloatTensor([gamma_t]))
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
         action_idx = self.action_space.card_to_idx(action)
 
         log_prob = self.net(state)[action_idx]
-        # -1 * gamma_t * reward * log_prob
         loss = -1 * reward * log_prob
 
         self.optimizer.zero_grad()  # clear grad
@@ -253,11 +252,7 @@ class PolNetValActions(PolicyNet):
             valid_action_dist = valid_action_dist / dist_sum
 
         # Sample
-        action_idx = -1
-        if np.random.random() > 0.8:
-            action_idx = valid_actions_idxs[np.argmax(valid_action_dist)]
-        else:
-            action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
+        action_idx = sample(valid_actions_idxs, valid_action_dist, 0.5)
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
@@ -298,11 +293,10 @@ class PolNetValActionsSoftmax(PolicyNet):
         if self.policy_load:
             self.load(self.policy_load)
 
-    def update(self, wrapped_state, action, gamma_t, reward):
+    def update(self, wrapped_state, action, reward):
         """
         wrapped_state: wrapped_state dict that contains S_t, hand_t, and top_of_pile_t
         action: action A_t
-        gamma_t: gamma^t
         reward: G-v(S_t,w) or just G or just R'
         """
 
@@ -313,7 +307,6 @@ class PolNetValActionsSoftmax(PolicyNet):
         top_of_pile = wrapped_state["top_of_pile"]
 
         state = Variable(torch.from_numpy(state).type(torch.float32))
-        # gamma_t = Variable(torch.FloatTensor([gamma_t]))
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
@@ -345,7 +338,6 @@ class PolNetValActionsSoftmax(PolicyNet):
         action_vals[not valid_actions_bool_mask] = 0
 
         log_prob = action_vals[action_idx]
-        # -1 * gamma_t * reward * log_prob
         loss = -1 * reward * log_prob
 
         self.optimizer.zero_grad()  # clear grad
@@ -382,11 +374,7 @@ class PolNetValActionsSoftmax(PolicyNet):
         valid_action_dist = f.softmax(valid_action_vals, -1).numpy()
 
         # Sample
-        action_idx = -1
-        if np.random.random() > 0.8:
-            action_idx = valid_actions_idxs[np.argmax(valid_action_dist)]
-        else:
-            action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
+        action_idx = sample(valid_actions_idxs, valid_action_dist, 0.5)
 
         # Convert to card
         return self.action_space.idx_to_card(

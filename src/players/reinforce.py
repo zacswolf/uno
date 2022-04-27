@@ -20,6 +20,7 @@ class ReinforceValActions(Player):
             self.action_space, self.state_space.size(), player_args, game_args
         )
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
+        self.gamma = player_args.gamma
 
         self.state_history = []
         self.action_history = []
@@ -66,8 +67,6 @@ class ReinforceValActions(Player):
         reward = 2 * win - 1
         self.reward_history[-1] += reward
 
-        gamma = 1
-
         assert len(self.state_history) == len(self.action_history)
         assert len(self.action_history) + 1 == len(self.reward_history)
 
@@ -75,13 +74,13 @@ class ReinforceValActions(Player):
 
         for t, (s, a) in enumerate(zip(self.state_history, self.action_history)):
             # G = reward
-            # G = sum(pow(gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
-            G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
+            G = sum(pow(self.gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
+            # G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
 
             delta = G - self.value.get_value(s)
             if self.update:
                 self.value.update(s, G)
-                self.policy.update(s, a, pow(gamma, t), delta)
+                self.policy.update(s, a, delta * pow(self.gamma, t))
 
         # Reset for next game
         self.state_history = []
@@ -122,7 +121,8 @@ class ReinforceValActionsSoftmax(Player):
             self.action_space, self.state_space.size(), player_args, game_args
         )
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
-
+        self.gamma = player_args.gamma
+        
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
@@ -174,8 +174,6 @@ class ReinforceValActionsSoftmax(Player):
         reward = 2 * win - 1
         self.reward_history[-1] += reward
 
-        gamma = 1
-
         assert len(self.state_history) == len(self.action_history)
         assert len(self.action_history) + 1 == len(self.reward_history)
 
@@ -183,14 +181,14 @@ class ReinforceValActionsSoftmax(Player):
 
         for t, (ws, a) in enumerate(zip(self.state_history, self.action_history)):
             # G = reward
-            # G = sum(pow(gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
-            G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
+            G = sum(pow(self.gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
+            # G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
 
             s = ws["state"]
             delta = G - self.value.get_value(s)
             if self.update:
                 self.value.update(s, G)
-                self.policy.update(ws, a, pow(gamma, t), delta)
+                self.policy.update(ws, a, delta * pow(self.gamma, t))
 
         # Reset for next game
         self.state_history = []
@@ -231,6 +229,7 @@ class ReinforceValActionsSoftmax2(Player):
             self.action_space, self.state_space.size(), player_args, game_args
         )
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
+        self.gamma = player_args.gamma
 
         self.state_history = []
         self.action_history = []
@@ -283,8 +282,6 @@ class ReinforceValActionsSoftmax2(Player):
         reward = 2 * win - 1
         self.reward_history[-1] += reward
 
-        gamma = 1
-
         assert len(self.state_history) == len(self.action_history)
         assert len(self.action_history) + 1 == len(self.reward_history)
 
@@ -292,14 +289,14 @@ class ReinforceValActionsSoftmax2(Player):
 
         for t, (ws, a) in enumerate(zip(self.state_history, self.action_history)):
             # G = reward
-            # G = sum(pow(gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
-            G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
+            G = sum(pow(self.gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
+            # G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
 
             s = ws["state"]
             delta = G - self.value.get_value(s)
             if self.update:
                 self.value.update(s, G)
-                self.policy.update(ws, a, pow(gamma, t), delta)
+                self.policy.update(ws, a, delta * pow(self.gamma, t))
 
         # Reset for next game
         self.state_history = []
