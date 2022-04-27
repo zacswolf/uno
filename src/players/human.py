@@ -68,9 +68,6 @@ class HumanPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        assert False
-
     def on_card_rejection(self, card):  # pile, card_counts,
         super().on_card_rejection(card)  # pile, card_counts,
         print("Card rejected")

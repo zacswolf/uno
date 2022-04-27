@@ -218,19 +218,9 @@ class Game:
                 if card.can_play_on(self.pile[-1]):
                     valid_card = True
 
-                    # Deal with wild
-                    if card.color == Color.WILD:
+                    assert card.color != Color.WILD, "Wild wasn't colored"
 
-                        color = player.on_choose_wild_color(
-                            self.pile, card_counts, card.type
-                        )
-                        logging.debug("A wild was played: %s" % color)
-
-                        # Make sure Color isn't Wild
-                        assert color != Color.WILD
-
-                        card.color = color
-                    elif card.type >= Type.CHANGECOLOR:
+                    if card.type >= Type.CHANGECOLOR:
                         # Wild is already colored
                         logging.debug("A wild was played: %s" % card.color)
 
