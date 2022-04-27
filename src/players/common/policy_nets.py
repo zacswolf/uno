@@ -253,7 +253,11 @@ class PolNetValActions(PolicyNet):
             valid_action_dist = valid_action_dist / dist_sum
 
         # Sample
-        action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
+        action_idx = -1
+        if np.random.random() > 0.8:
+            action_idx = valid_actions_idxs[np.argmax(valid_action_dist)]
+        else:
+            action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
@@ -378,7 +382,11 @@ class PolNetValActionsSoftmax(PolicyNet):
         valid_action_dist = f.softmax(valid_action_vals, -1).numpy()
 
         # Sample
-        action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
+        action_idx = -1
+        if np.random.random() > 0.8:
+            action_idx = valid_actions_idxs[np.argmax(valid_action_dist)]
+        else:
+            action_idx = np.random.choice(valid_actions_idxs, p=valid_action_dist)
 
         # Convert to card
         return self.action_space.idx_to_card(
