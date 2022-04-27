@@ -89,7 +89,6 @@ class Reinforce1(Player):
             # G = reward
             # G = sum(pow(gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
             G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
-            print(str(t) + " " + str(a))
             delta = G - self.value.get_value(s)
             self.value.update(s, G)
             self.policy.update(s, a, pow(gamma, t), delta)
