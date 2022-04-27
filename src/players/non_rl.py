@@ -14,11 +14,8 @@ class DrawPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         return None
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
@@ -32,7 +29,7 @@ class RandomPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         # Choose card uniformly
         top_of_pile = pile[-1]
 
@@ -46,9 +43,6 @@ class RandomPlayer(Player):
             return card
         else:
             return None
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_choose_wild_color(self):
         return random.choice([Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW])
@@ -64,7 +58,7 @@ class NoobPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         # Choose Color/Numbers -> Color/srd2 -> Type -> Wild, leaks data based on Enums
         top_of_pile = pile[-1]
 
@@ -80,9 +74,6 @@ class NoobPlayer(Player):
             if card.color == Color.WILD:
                 card.color = self.on_choose_wild_color()
         return card
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_choose_wild_color(self):
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
@@ -102,7 +93,7 @@ class BasicPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         # Choose Color/Numbers -> Color/srd2 -> numbers -> srd2 -> Wild -> Draw card
         top_of_pile = pile[-1]
 
@@ -126,9 +117,6 @@ class BasicPlayer(Player):
 
         return card
 
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
-
     def on_choose_wild_color(self):
         return max(
             set(c.color for c in self.hand if c.color != Color.WILD),
@@ -147,7 +135,7 @@ class DecentPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Color Number-single
@@ -198,9 +186,6 @@ class DecentPlayer(Player):
 
         return None
 
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
-
     def on_choose_wild_color(self):
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
         shuffled_colors = random.sample(colors_l, k=len(colors_l))
@@ -222,7 +207,7 @@ class DecentPlayer2(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Shuffle
@@ -302,9 +287,6 @@ class DecentPlayer2(Player):
 
         return None
 
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
-
     def on_choose_wild_color(self):
         # Play color player has the most
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
@@ -327,7 +309,7 @@ class DecentPlayer3(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Shuffle
@@ -430,9 +412,6 @@ class DecentPlayer3(Player):
 
         return None
 
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
-
     def on_choose_wild_color(self):
         # Play color player has the most
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
@@ -511,7 +490,7 @@ class DecentPlayer4(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Shuffle
@@ -645,9 +624,6 @@ class DecentPlayer4(Player):
             return card
 
         return None
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_choose_wild_color(self):
         # Play color player has the most

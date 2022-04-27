@@ -198,7 +198,7 @@ class Game:
         card = None
         while not valid_card:
             assert card_counts[0] == len(player.hand)
-            card = player.on_turn(self.pile, card_counts)
+            card = player.on_turn(self.pile, card_counts, False)
             # TODO: Make sure player isn't playing a card that they don't have
             if card is not None:
                 assert card_counts[0] == len(player.hand) + 1
@@ -211,7 +211,7 @@ class Game:
                 player.get_card(card_drawn)
                 assert len(player.hand) == card_counts[0] + 1
                 card_counts[0] = len(player.hand)
-                card = player.on_draw(self.pile, card_counts)
+                card = player.on_turn(self.pile, card_counts, True)
             # If card is none at this point, the player drew a card and didn't play it
 
             # Check card
