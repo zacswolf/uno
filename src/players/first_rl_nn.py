@@ -25,9 +25,6 @@ class FirstRLPlayer(Player):
             self.action_space, self.ss_size, player_args, game_args
         )
 
-    def get_name(self) -> str:
-        return "firstrlplayer"
-
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
 
@@ -101,9 +98,6 @@ class SecondRLPlayer(Player):
         self.policy = policy_nets.PolNetValActions(
             self.action_space, self.ss_size, player_args, game_args
         )
-
-    def get_name(self) -> str:
-        return "secrlplayer"
 
     def on_turn(self, pile, card_counts):
 

@@ -27,12 +27,14 @@ class Game:
                 )
 
             self.players: list[Player] = []
+            self.player_names = []
             for player_idx, player_args in enumerate(args.players):
                 # Create player based on player str
                 player_args.player_idx = player_idx
                 self.players.append(
                     str_to_player(player_args.player)(player_args, args.game.shared)
                 )
+                self.player_names.append(player_args.player)
 
             # self.reset(0)
         except:
@@ -148,7 +150,7 @@ class Game:
                     game_over = True
                     winner_idx = self.player_idx
                     num_turns = self.turn_num
-                    winner_str = self.players[self.player_idx].get_name()
+                    winner_str = self.player_names[self.player_idx]
 
                     # Notify players for feedback
                     for (idx, player) in enumerate(self.players):
@@ -178,6 +180,7 @@ class Game:
         """
         # Get current player
         player = self.players[self.player_idx]
+        player_name = self.player_names[self.player_idx]
 
         # Get all players num cards
         card_counts = list(map(lambda player: len(player.hand), self.players))
@@ -188,7 +191,7 @@ class Game:
 
         logging.info(
             "turn_num: %s, player_idx: %s, plyr_str: %s"
-            % (self.turn_num, self.player_idx, player.get_name())
+            % (self.turn_num, self.player_idx, player_name)
         )
 
         valid_card = False

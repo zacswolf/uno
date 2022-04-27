@@ -25,9 +25,6 @@ class ReinforceValActions(Player):
         self.action_history = []
         self.reward_history = [0]
 
-    def get_name(self) -> str:
-        return "reinvalact"
-
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
 
@@ -132,9 +129,6 @@ class ReinforceValActionsSoftmax(Player):
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
-
-    def get_name(self) -> str:
-        return "reinvalactsoft"
 
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
@@ -247,9 +241,6 @@ class ReinforceValActionsSoftmax2(Player):
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
-
-    def get_name(self) -> str:
-        return "reinvalactsoft2"
 
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
