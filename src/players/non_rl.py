@@ -14,9 +14,6 @@ class DrawPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
 
-    def get_name(self) -> str:
-        return "draw"
-
     def on_turn(self, pile, card_counts):
         return None
 
@@ -34,9 +31,6 @@ class DrawPlayer(Player):
 class RandomPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "random"
 
     def on_turn(self, pile, card_counts):
         # Choose card uniformly
@@ -69,9 +63,6 @@ class RandomPlayer(Player):
 class NoobPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "noob"
 
     def on_turn(self, pile, card_counts):
         # Choose Color/Numbers -> Color/srd2 -> Type -> Wild, leaks data based on Enums
@@ -110,9 +101,6 @@ class NoobPlayer(Player):
 class BasicPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "basic"
 
     def on_turn(self, pile, card_counts):
         # Choose Color/Numbers -> Color/srd2 -> numbers -> srd2 -> Wild -> Draw card
@@ -158,9 +146,6 @@ class BasicPlayer(Player):
 class DecentPlayer(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "decent"
 
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
@@ -236,9 +221,6 @@ class DecentPlayer(Player):
 class DecentPlayer2(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "decent2"
 
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
@@ -344,9 +326,6 @@ class DecentPlayer2(Player):
 class DecentPlayer3(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "decent3"
 
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]
@@ -531,9 +510,6 @@ def bf_hard_streak(top_of_pile, hand, recurse_run=False):
 class DecentPlayer4(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-
-    def get_name(self) -> str:
-        return "decent4"
 
     def on_turn(self, pile, card_counts):
         top_of_pile = pile[-1]

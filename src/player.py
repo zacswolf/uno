@@ -10,19 +10,6 @@ class Player(ABC):
 
         self.player_args = player_args
         self.game_args = game_args
-    
-    @staticmethod
-    @abstractmethod
-    def get_name(self) -> str:
-        """Identifies the player for logging
-
-        Raises:
-            NotImplementedError: Inherited Player must impliment
-
-        Returns:
-            str: Name of Player, use plyr_str
-        """
-        raise NotImplementedError()
 
     def get_card(self, card: Card) -> None:
         """Called when Player gets a new Card
