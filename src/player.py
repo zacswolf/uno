@@ -64,23 +64,6 @@ class Player(ABC):
         """
         raise NotImplementedError()
 
-    @abstractmethod
-    def on_choose_wild_color(self, pile: Card, card_counts: list[int], card_type: Type) -> Color:
-        """Called after Player draws a card and needs to make a decision
-
-        Args:
-            pile (Card): Card on the top of the pile
-            card_counts (list[int]): List of all players card counts relative to the player
-            card_type (Type): Type of wildcard
-
-        Raises:
-            NotImplementedError: Inherited Player must impliment
-
-        Returns:
-            Color: Desired color of the wildcard
-        """
-        raise NotImplementedError()
-
     # Called when game rejects player's card
     def on_card_rejection(self, card: Card) -> None:  # self, pile, card_counts, card
         """Called when game rejects player's card

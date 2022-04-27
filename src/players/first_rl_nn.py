@@ -75,10 +75,6 @@ class FirstRLPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        # Choose color randomly
-        assert False, "This model should always color the wild card on turn"
-
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
 
@@ -148,10 +144,6 @@ class SecondRLPlayer(Player):
 
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
-
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        # Choose color randomly
-        assert False, "This model should always color the wild card on turn"
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)

@@ -23,10 +23,6 @@ class DrawPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        # Choose color randomly
-        assert False, "DrawPlayer should never play a card"
-
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
         assert False, "DrawPlayer should never play a card"
@@ -50,6 +46,9 @@ class RandomPlayer(Player):
         if len(can_play_l):
             card = random.choice(can_play_l)
             self.hand.remove(card)
+
+            if card.color == Color.WILD:
+                card.color = self.on_choose_wild_color()
             return card
         else:
             return None
@@ -57,8 +56,7 @@ class RandomPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        # Choose color randomly
+    def on_choose_wild_color(self):
         return random.choice([Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW])
 
     def on_card_rejection(self, card):
@@ -88,18 +86,19 @@ class NoobPlayer(Player):
         card = next((c for c in self.hand if c.can_play_on(top_of_pile)), None)
         if card:
             self.hand.remove(card)
+            if card.color == Color.WILD:
+                card.color = self.on_choose_wild_color()
         return card
 
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        # Choose color uniformly from hand
+    def on_choose_wild_color(self):
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
+        color = Color.RED
         if len(colors_l):
-            return random.choice(colors_l)
-        else:
-            return Color.RED
+            color = random.choice(colors_l)
+        return color
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
@@ -134,13 +133,15 @@ class BasicPlayer(Player):
         card = next((c for c in shuffled_hand if c.can_play_on(top_of_pile)), None)
         if card:
             self.hand.remove(card)
+            if card.color == Color.WILD:
+                card.color = self.on_choose_wild_color()
+
         return card
 
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        # Play color player has the most
+    def on_choose_wild_color(self):
         return max(
             set(c.color for c in self.hand if c.color != Color.WILD),
             key=[c.color for c in self.hand if c.color != Color.WILD].count,
@@ -205,6 +206,9 @@ class DecentPlayer(Player):
         if len(wild_l):
             card = random.choice(wild_l)
             self.hand.remove(card)
+            assert card.color == Color.WILD
+            card.color = self.on_choose_wild_color()
+
             return card
 
         return None
@@ -212,9 +216,7 @@ class DecentPlayer(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-
-        # Play color player has the most
+    def on_choose_wild_color(self):
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
         shuffled_colors = random.sample(colors_l, k=len(colors_l))
 
@@ -310,6 +312,10 @@ class DecentPlayer2(Player):
         card = next((card for card in self.hand if card.can_play_on(top_of_pile)), None)
         if card:
             self.hand.remove(card)
+            assert card.color == Color.WILD
+
+            card.color = self.on_choose_wild_color()
+
             return card
 
         return None
@@ -317,8 +323,7 @@ class DecentPlayer2(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-
+    def on_choose_wild_color(self):
         # Play color player has the most
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
         shuffled_colors = random.sample(colors_l, k=len(colors_l))
@@ -372,6 +377,9 @@ class DecentPlayer3(Player):
                     (card for card in self.hand if card.type == Type.DRAW4),
                     None,
                 )
+                if card:
+                    assert card.color == Color.WILD
+                    card.color = self.on_choose_wild_color()
             if card:
                 self.hand.remove(card)
                 return card
@@ -437,6 +445,8 @@ class DecentPlayer3(Player):
         card = next((card for card in self.hand if card.can_play_on(top_of_pile)), None)
         if card:
             self.hand.remove(card)
+            assert card.color == Color.WILD
+            card.color = self.on_choose_wild_color()
             return card
 
         return None
@@ -444,8 +454,7 @@ class DecentPlayer3(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-
+    def on_choose_wild_color(self):
         # Play color player has the most
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
         shuffled_colors = random.sample(colors_l, k=len(colors_l))
@@ -522,7 +531,6 @@ def bf_hard_streak(top_of_pile, hand, recurse_run=False):
 class DecentPlayer4(Player):
     def __init__(self, player_idx, args) -> None:
         super().__init__(player_idx, args)
-        self.wild_card_steak_color = None
 
     def get_name(self) -> str:
         return "decent4"
@@ -537,8 +545,6 @@ class DecentPlayer4(Player):
         type_count_sorted_hand = sorted(
             self.hand, key=lambda card: type_counter[card.type]
         )
-
-        self.wild_card_steak_color = None
 
         if card_counts[1] <= 2:
             # Next player is close to winning
@@ -558,6 +564,9 @@ class DecentPlayer4(Player):
                     (card for card in self.hand if card.type == Type.DRAW4),
                     None,
                 )
+                if card:
+                    assert card.color == Color.WILD
+                    card.color = self.on_choose_wild_color()
             if card:
                 self.hand.remove(card)
                 return card
@@ -583,12 +592,14 @@ class DecentPlayer4(Player):
                 logging.debug("Hard Streak: %s" % longest_streak)
 
                 if (
-                    card.type == Color.WILD
+                    card.color == Color.WILD
                     and len(longest_streak) > 1
                     and longest_streak[-2].color != Color.WILD
                 ):
                     # Set the color for the wildcard
-                    self.wild_card_steak_color = longest_streak[-2].color
+                    card.color = longest_streak[-2].color
+                    if card.color == Color.WILD:
+                        card.color = self.on_choose_wild_color()
                 self.hand.remove(card)
                 return card
 
@@ -653,6 +664,8 @@ class DecentPlayer4(Player):
         card = next((card for card in self.hand if card.can_play_on(top_of_pile)), None)
         if card:
             self.hand.remove(card)
+            assert card.color == Color.WILD
+            card.color = self.on_choose_wild_color()
             return card
 
         return None
@@ -660,10 +673,7 @@ class DecentPlayer4(Player):
     def on_draw(self, pile, card_counts):
         return self.on_turn(pile, card_counts)
 
-    def on_choose_wild_color(self, pile, card_counts, card_type):
-        if self.wild_card_steak_color:
-            return self.wild_card_steak_colors
-
+    def on_choose_wild_color(self):
         # Play color player has the most
         colors_l = [c.color for c in self.hand if c.color != Color.WILD]
         shuffled_colors = random.sample(colors_l, k=len(colors_l))
