@@ -4,29 +4,35 @@ from enums import Direction, Color, Type
 from card import Card
 import random
 import logging
+from load_args import load_args
 
 from player import str_to_player, Player
 
 
 class Game:
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args) -> None:
         try:
             logging.info(f"args: {args}")
 
             # Store args
-            self.num_players = args.num_players
-            self.skip_draw = not args.no_draw_skip
-            self.alternate = args.alternate
+            self.num_players = args.game.shared.num_players
+            self.draw_skip = args.game.private.draw_skip
+            self.alternate = args.game.private.alternate
 
             if self.num_players < 2 or self.num_players > 10:
                 raise ValueError("Invalid number of players")
             elif self.num_players != len(args.players):
-                raise ValueError("num_players arg doesn't match players arg list")
+                raise ValueError(
+                    f"num_players arg ({self.num_players}) doesn't match players arg list ({args.players})"
+                )
 
             self.players: list[Player] = []
-            for player_idx, player_str in enumerate(args.players):
+            for player_idx, player_args in enumerate(args.players):
                 # Create player based on player str
-                self.players.append(str_to_player(player_str)(player_idx, args))
+                player_args.player_idx = player_idx
+                self.players.append(
+                    str_to_player(player_args.player)(player_args, args.game.shared)
+                )
 
             # self.reset(0)
         except:
@@ -34,14 +40,14 @@ class Game:
             raise
 
     def reset(self, game_num: int):
-        self.deck = Deck(args.with_replacement)
+        self.deck = Deck(args.game.private.with_replacement)
 
         # Clear hands
         for player in self.players:
             player.hand = []
 
         # Deal
-        for _ in range(args.num_cards):
+        for _ in range(args.game.private.num_cards):
             for player in self.players:
                 player.get_card(self.draw_card())
         for player_idx, player in enumerate(self.players):
@@ -119,16 +125,16 @@ class Game:
                         for _ in range(2):
                             self.players[next_player_idx].get_card(self.draw_card())
 
-                        # Skip if self.skip_draw
-                        skip = self.skip_draw
+                        # Skip if self.draw_skip
+                        skip = self.draw_skip
 
                     elif card.type == Type.DRAW4:
                         # Draw 4
                         for _ in range(4):
                             self.players[next_player_idx].get_card(self.draw_card())
 
-                        # Skip if self.skip_draw
-                        skip = self.skip_draw
+                        # Skip if self.draw_skip
+                        skip = self.draw_skip
 
                     if skip:
                         # Skip logic
@@ -247,103 +253,17 @@ class Game:
 
 
 if __name__ == "__main__":
-    import argparse
     import sys
     import os
-    from datetime import datetime
 
     if not sys.version_info >= (3, 10):
         sys.exit("Python < 3.10 is unsupported.")
 
-    my_parser = argparse.ArgumentParser(description="Uno game")
-    my_parser.add_argument(
-        "-n",
-        "--num_players",
-        type=int,
-        default=2,
-        choices=range(2, 11),
-        metavar="[2-10]",
-        help="Number of players",
-    )
-    my_parser.add_argument(
-        "--no_draw_skip",
-        action="store_true",
-        help="Don't skip a players turn if they have to draw 2/4",
-    )
-    my_parser.add_argument(
-        "--with_replacement",
-        action="store_true",
-        help="Deck is drawn with replacement",
-    )
-    my_parser.add_argument(
-        "--num_cards",
-        type=int,
-        default=7,
-        help="Initial number of cards per player",
-    )
-    my_parser.add_argument(
-        "--players",
-        nargs="+",
-        required=True,
-        help="List of players using player strings",
-    )
-    my_parser.add_argument(
-        "--num_games",
-        type=int,
-        default=1,
-        help="Number of games to play",
-    )
-    my_parser.add_argument(
-        "--value_net",
-        nargs="+",
-        help="File locations of value_net to initialize with",
-    )
-    my_parser.add_argument(
-        "--policy_net",
-        nargs="+",
-        help="File locations of policy_net to initialize with",
-    )
-    my_parser.add_argument(
-        "--no_update",
-        action="store_true",
-        help="Don't update any of the rl bots, just evaluate",
-    )
-    my_parser.add_argument(
-        "--alternate",
-        action="store_true",
-        help="Alternate which player starts first",
-    )
-
-    args = my_parser.parse_args()
-
-    # assert args.num_players == 2
-
-    # Add custom values to the namespace
-    d = vars(args)
-    d["root_file"] = os.path.dirname(__file__)
-    d["run_name"] = datetime.now().strftime("%m_%d_%H_%M_%S")
-    d["model_dir"] = os.path.join(args.root_file, "../models/")
-
-    # Process value_net
-    if args.value_net:
-        assert len(args.value_net) <= len(args.players)
-        if len(args.value_net) < len(args.players):
-            # Pad value net arg
-            d["value_net"] += [""] * (len(args.players) - len(args.value_net))
-    else:
-        d["value_net"] = [""] * len(args.players)
-
-    # Process policy_net
-    if args.policy_net:
-        assert len(args.policy_net) <= len(args.players)
-        if len(args.policy_net) < len(args.players):
-            # Pad policy net arg
-            d["policy_net"] += [""] * (len(args.players) - len(args.policy_net))
-    else:
-        d["policy_net"] = [""] * len(args.players)
-
+    args = load_args()
     # Setup logging
-    log_file = os.path.join(args.root_file, "../logs/", f"log_{args.run_name}.log")
+    log_file = os.path.join(
+        args.game.private.root_file, "../logs/", f"log_{args.game.shared.run_name}.log"
+    )
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
@@ -354,8 +274,8 @@ if __name__ == "__main__":
 
     # Main
     game = Game(args)
-    winner_tracker = [0] * (args.num_players + 1)
-    for game_num in range(args.num_games):
+    winner_tracker = [0] * (args.game.shared.num_players + 1)
+    for game_num in range(args.game.shared.num_games):
         logging.info("STARTING GAME %d" % game_num)
         game.reset(game_num)
         winner_idx, num_turns, winner_str = game.run_game()

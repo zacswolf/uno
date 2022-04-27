@@ -3,8 +3,8 @@ from enums import Color
 
 
 class HumanPlayer(Player):
-    def __init__(self, player_idx, args) -> None:
-        super().__init__(player_idx, args)
+    def __init__(self, player_args, game_args) -> None:
+        super().__init__(player_args, game_args)
 
     def get_name(self) -> str:
         return "human"
@@ -34,6 +34,29 @@ class HumanPlayer(Player):
                 try:
                     play = int(play)
                     card = self.hand.pop(play)
+
+                    if card.color == Color.WILD:
+                        print(
+                            "What color do you want to change it to? ('r','g','b', 'y')"
+                        )
+                        while card.color == Color.WILD:
+                            wild_color = input()
+                            if not len(wild_color):
+                                print("Please give a valid input: ('r','g','b', 'y')")
+                                continue
+                            wild_color = wild_color[0]
+                            if wild_color == "r":
+                                wild_color = Color.RED
+                            elif wild_color == "b":
+                                wild_color = Color.BLUE
+                            elif wild_color == "g":
+                                wild_color = Color.GREEN
+                            elif wild_color == "y":
+                                wild_color = Color.YELLOW
+                            else:
+                                print("Please give a valid input")
+                                continue
+                            card.color = wild_color
                     return card
                 except ValueError:
                     print("Please give a valid input")
@@ -46,25 +69,7 @@ class HumanPlayer(Player):
         return self.on_turn(pile, card_counts)
 
     def on_choose_wild_color(self, pile, card_counts, card_type):
-        print("What color do you want to change it to? ('r','g','b', 'y')")
-        while True:
-            wild_color = input()
-            if not len(wild_color):
-                print("Please give a valid input: ('r','g','b', 'y')")
-                continue
-            wild_color = wild_color[0]
-            if wild_color == "r":
-                wild_color = Color.RED
-            elif wild_color == "b":
-                wild_color = Color.BLUE
-            elif wild_color == "g":
-                wild_color = Color.GREEN
-            elif wild_color == "y":
-                wild_color = Color.YELLOW
-            else:
-                print("Please give a valid input")
-                continue
-            return wild_color
+        assert False
 
     def on_card_rejection(self, card):  # pile, card_counts,
         super().on_card_rejection(card)  # pile, card_counts,

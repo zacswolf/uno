@@ -5,10 +5,11 @@ from abc import ABC, abstractmethod
 
 
 class Player(ABC):
-    def __init__(self, player_idx:int, args) -> None:
+    def __init__(self, player_args, game_args) -> None:
         self.hand: list[Card] = []
 
-        self.player_idx = player_idx
+        self.player_args = player_args
+        self.game_args = game_args
     
     @staticmethod
     @abstractmethod

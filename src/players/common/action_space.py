@@ -7,7 +7,7 @@ from players.common.misc import color_map, reverse_color_map
 
 
 class ActionSpace(ABC):
-    def __init__(self, args) -> None:
+    def __init__(self, game_args) -> None:
         super().__init__()
 
         self.NUM_TYPES = Type.DRAW4 + 1
@@ -36,8 +36,8 @@ class ActionSpace(ABC):
 class ASRep1(ActionSpace):
     """We consider this to be a full representation of the state space"""
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
 
         self.as_length = self.NUM_COLORS_NON_WILD * self.NUM_TYPES + 1  # Draw/Noop
 
@@ -69,8 +69,8 @@ class ASRep2(ActionSpace):
     ASRep1 with top_of_pile based misc.color_map
     """
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
 
         self.as_length = self.NUM_COLORS_NON_WILD * self.NUM_TYPES + 1  # Draw/Noop
 
@@ -101,8 +101,8 @@ class ASRep3WIP(ActionSpace):
     WIP because it doesn't support playing like a green 7 on a red 7
     """
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
 
         self.as_length = (
             self.NUM_TYPES_NON_WILD + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_WILD + 1
