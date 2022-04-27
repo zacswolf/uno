@@ -14,10 +14,11 @@ class Game:
             logging.info(f"args: {args}")
 
             # Store args
+            self.args = args
             self.num_players = args.game.shared.num_players
             self.draw_skip = args.game.private.draw_skip
             self.alternate = args.game.private.alternate
-
+            
             if self.num_players < 2 or self.num_players > 10:
                 raise ValueError("Invalid number of players")
             elif self.num_players != len(args.players):
@@ -41,6 +42,7 @@ class Game:
             raise
 
     def reset(self, game_num: int):
+        args = self.args
         self.deck = Deck(args.game.private.with_replacement)
 
         # Clear hands

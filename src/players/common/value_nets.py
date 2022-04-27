@@ -63,10 +63,15 @@ class ValueNet(ABC):
         Args:
             tag (str, optional): Any tags to be included in the file name. Defaults to "".
         """
-        value_model_file = os.path.join(
-            self.model_dir,
-            f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt",
-        )
+        value_model_file = None
+        if self.value_load:
+            # Saves to same file loaded in
+            value_model_file = value_model_file = os.path.join(self.model_dir, self.value_load)
+        else:
+            value_model_file = os.path.join(
+                self.model_dir,
+                f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt",
+            )
 
         # Note: We are not saving/loading optimizer state
         torch.save(self.net.state_dict(), value_model_file)

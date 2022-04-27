@@ -35,6 +35,7 @@ class ArgsPlayer:
     player: str
     value_net: str = ""
     policy_net: str = ""
+    gamma: int = 1
     player_idx: int = -1
 
 
@@ -100,6 +101,11 @@ def load_args() -> Args:
         help="File locations of policy_net to initialize with",
     )
     my_parser.add_argument(
+        "--gamma",
+        nargs="+",
+        help="Gamma for each player",
+    )
+    my_parser.add_argument(
         "--update",
         action=argparse.BooleanOptionalAction,
         help="Don't update any of the rl bots, just evaluate",
@@ -150,6 +156,7 @@ def load_args() -> Args:
     if args.players:
         value_nets = args.value_net
         policy_nets = args.policy_net
+        gammas = args.gamma
 
         # Process value_net
         if value_nets:
@@ -169,12 +176,21 @@ def load_args() -> Args:
         else:
             policy_nets = [""] * len(args.players)
 
+        # Process gammas
+        if gammas:
+            assert len(gammas) <= len(args.players)
+            if len(gammas) < len(args.players):
+                # Pad policy net arg
+                gammas += [1] * (len(args.players) - len(gammas))
+        else:
+            gammas = [1] * len(args.players)
+
         # Add to arg_dict
-        for (player, value_net, policy_net) in zip(
-            args.players, value_nets, policy_nets, strict=True
+        for (player, value_net, policy_net, gamma) in zip(
+            args.players, value_nets, policy_nets, gammas, strict=True
         ):
             arg_dict["players"].append(
-                {"player": player, "value_net": value_net, "policy_net": policy_net}
+                {"player": player, "value_net": value_net, "policy_net": policy_net, "gamma": gamma}
             )
 
     if args.conf:
