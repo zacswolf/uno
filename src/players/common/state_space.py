@@ -3,11 +3,12 @@ from card import Card
 import numpy as np
 
 from enums import Color, Type
+from load_args import ArgsGameShared
 from players.common.misc import color_map
 
 
 class StateSpace(ABC):
-    def __init__(self, game_args) -> None:
+    def __init__(self, game_args: ArgsGameShared) -> None:
         super().__init__()
         self.num_players = game_args.num_players
 

@@ -2,15 +2,14 @@ from argparse import Namespace
 from deck import Deck
 from enums import Direction, Color, Type
 from card import Card
-import random
 import logging
-from load_args import load_args
+from load_args import Args, load_args
 
 from player import str_to_player, Player
 
 
 class Game:
-    def __init__(self, args) -> None:
+    def __init__(self, args: Args) -> None:
         try:
             logging.info(f"args: {args}")
 
@@ -245,7 +244,7 @@ class Game:
         return card
 
 
-if __name__ == "__main__":
+def main():
     import sys
     import os
 
@@ -278,3 +277,7 @@ if __name__ == "__main__":
         print(game_res_str)
     print(winner_tracker)
     logging.info(f"Winner tracker: {winner_tracker}")
+
+
+if __name__ == "__main__":
+    main()
