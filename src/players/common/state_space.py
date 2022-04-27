@@ -7,9 +7,9 @@ from players.common.misc import color_map
 
 
 class StateSpace(ABC):
-    def __init__(self, args) -> None:
+    def __init__(self, game_args) -> None:
         super().__init__()
-        self.num_players = args.num_players
+        self.num_players = game_args.num_players
 
         self.NUM_TYPES = Type.DRAW4 + 1
         self.NUM_TYPES_NON_WILD = Type.CHANGECOLOR
@@ -31,8 +31,8 @@ class StateSpace(ABC):
 class SSRep1(StateSpace):
     """We consider this to be a near full representation of the state space"""
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
 
         self.ss_length = (
             self.NUM_COLORS_NON_WILD
@@ -96,8 +96,8 @@ class SSRep2(StateSpace):
     """We consider this to be a near full representation of the state space with color rotation
     SSRep1 except with top_of_pile based misc.color_map and no top pile color"""
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
 
         self.ss_length = (
             self.NUM_TYPES

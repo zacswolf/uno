@@ -13,7 +13,7 @@ from players.common.action_space import ActionSpace
 
 class PolicyNet(ABC):
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, args, player_idx
+        self, action_space: ActionSpace, ss_size: int, player_args, game_args
     ) -> None:
         super().__init__()
 
@@ -24,12 +24,12 @@ class PolicyNet(ABC):
         self.net: torch.nn.Module
 
         # For saving model
-        self.model_dir = args.model_dir
-        self.run_name = args.run_name
-        self.player_idx = player_idx
+        self.model_dir = game_args.model_dir
+        self.run_name = game_args.run_name
+        self.player_idx = player_args.player_idx
 
         # For loading model
-        self.policy_load = args.policy_net[player_idx]
+        self.policy_load = player_args.policy_net
 
     @abstractmethod
     # Note: params probably wont generalize to all policy nets
@@ -92,9 +92,9 @@ class PolNetBasic(PolicyNet):
     """Policy Net that doesn't check if a card is valid"""
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, args, player_idx
+        self, action_space: ActionSpace, ss_size: int, player_args, game_args
     ) -> None:
-        super().__init__(action_space, ss_size, args, player_idx)
+        super().__init__(action_space, ss_size, player_args, game_args)
 
         n_hidden = 128
 
@@ -163,9 +163,9 @@ class PolNetValActions(PolicyNet):
     """Policy Net that checks if a card is valid"""
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, args, player_idx
+        self, action_space: ActionSpace, ss_size: int, player_args, game_args
     ) -> None:
-        super().__init__(action_space, ss_size, args, player_idx)
+        super().__init__(action_space, ss_size, player_args, game_args)
 
         n_hidden = 128
 
@@ -258,9 +258,9 @@ class PolNetValActionsSoftmax(PolicyNet):
     """Policy Net that checks if a card is valid and does a smart softmax"""
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, args, player_idx
+        self, action_space: ActionSpace, ss_size: int, player_args, game_args
     ) -> None:
-        super().__init__(action_space, ss_size, args, player_idx)
+        super().__init__(action_space, ss_size, player_args, game_args)
 
         n_hidden = 128
 

@@ -1,0 +1,17 @@
+game:
+  shared: # Shared with players
+    num_players: 2
+    num_games: 10
+  private: # Hidden from players
+    with_replacement: True
+    num_cards: 10
+    alternate: True
+    draw_skip: True
+    
+
+players:
+  - player: basic
+    value_net: ""
+    policy_net: ""
+  - player: human
+

@@ -8,21 +8,21 @@ from players.common.state_space import SSRep1
 
 
 class FirstRLPlayer(Player):
-    def __init__(self, player_idx, args) -> None:
-        super().__init__(player_idx, args)
+    def __init__(self, player_args, game_args) -> None:
+        super().__init__(player_args, game_args)
 
-        self.num_games = args.num_games
+        self.num_games = game_args.num_games
         self.game_num = 0
 
-        self.update = not args.no_update
+        self.update = game_args.update
 
-        self.state_space = SSRep1(args)
-        self.action_space = ASRep1(args)
+        self.state_space = SSRep1(game_args)
+        self.action_space = ASRep1(game_args)
         self.ss_size = self.state_space.size()
         self.as_size = self.action_space.size()
 
         self.policy = policy_nets.PolNetBasic(
-            self.action_space, self.ss_size, args, player_idx
+            self.action_space, self.ss_size, player_args, game_args
         )
 
     def get_name(self) -> str:
@@ -91,19 +91,19 @@ class FirstRLPlayer(Player):
 
 
 class SecondRLPlayer(Player):
-    def __init__(self, player_idx, args) -> None:
-        super().__init__(player_idx, args)
+    def __init__(self, player_args, game_args) -> None:
+        super().__init__(player_args, game_args)
 
-        self.num_games = args.num_games
+        self.num_games = game_args.num_games
         self.game_num = 0
 
-        self.state_space = SSRep1(args)
-        self.action_space = ASRep1(args)
+        self.state_space = SSRep1(game_args)
+        self.action_space = ASRep1(game_args)
         self.ss_size = self.state_space.size()
         self.as_size = self.action_space.size()
 
         self.policy = policy_nets.PolNetValActions(
-            self.action_space, self.ss_size, args, player_idx
+            self.action_space, self.ss_size, player_args, game_args
         )
 
     def get_name(self) -> str:

@@ -8,7 +8,7 @@ from players.common.state_space import StateSpace
 
 
 class ValueNet(ABC):
-    def __init__(self, state_space: StateSpace, args, player_idx) -> None:
+    def __init__(self, state_space: StateSpace, player_args, game_args) -> None:
         super().__init__()
         self.state_space = state_space
         self.ss_size = self.state_space.size()
@@ -16,12 +16,12 @@ class ValueNet(ABC):
         self.net: torch.nn.Module
 
         # For saving model
-        self.model_dir = args.model_dir
-        self.run_name = args.run_name
-        self.player_idx = player_idx
+        self.model_dir = game_args.model_dir
+        self.run_name = game_args.run_name
+        self.player_idx = player_args.player_idx
 
         # For loading model
-        self.value_load = args.value_net[player_idx]
+        self.value_load = player_args.value_net
 
     @abstractmethod
     def update(self, state, G: float) -> None:
@@ -76,8 +76,8 @@ class ValueNet(ABC):
 
 
 class ValueNet1(ValueNet):
-    def __init__(self, state_space: StateSpace, args, player_idx) -> None:
-        super().__init__(state_space, args, player_idx)
+    def __init__(self, state_space: StateSpace, player_args, game_args) -> None:
+        super().__init__(state_space, player_args, game_args)
 
         n_hidden = 128
 
