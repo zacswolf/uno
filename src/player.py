@@ -20,7 +20,7 @@ class Player(ABC):
         self.hand.append(card)
 
     @abstractmethod
-    def on_turn(self, pile: list[Card], card_counts: list[int]) -> Card | None:
+    def on_turn(self, pile: list[Card], card_counts: list[int], drawn: bool) -> Card | None:
         """Called when its Player's turn
 
         Args:
@@ -32,22 +32,6 @@ class Player(ABC):
 
         Returns:
             Card | None: Card to play card or None to draw
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_draw(self, pile: Card, card_counts: list[int]) -> Card | None:
-        """Called after Player draws a card and needs to make a decision
-
-        Args:
-            pile (Card): Card on the top of the pile
-            card_counts (list[int]): List of all players card counts relative to the player
-
-        Raises:
-            NotImplementedError: Inherited Player must impliment
-
-        Returns:
-            Card | None: Card to play card or None to pass
         """
         raise NotImplementedError()
 

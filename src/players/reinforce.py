@@ -25,7 +25,7 @@ class ReinforceValActions(Player):
         self.action_history = []
         self.reward_history = [0]
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Get state
@@ -56,9 +56,6 @@ class ReinforceValActions(Player):
         if card:
             self.hand.remove(card)
         return card
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
@@ -130,7 +127,7 @@ class ReinforceValActionsSoftmax(Player):
         self.action_history = []
         self.reward_history = [0]
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Get state
@@ -167,9 +164,6 @@ class ReinforceValActionsSoftmax(Player):
         if card:
             self.hand.remove(card)
         return card
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
@@ -242,7 +236,7 @@ class ReinforceValActionsSoftmax2(Player):
         self.action_history = []
         self.reward_history = [0]
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Get state
@@ -279,9 +273,6 @@ class ReinforceValActionsSoftmax2(Player):
         if card:
             self.hand.remove(card)
         return card
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)

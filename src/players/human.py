@@ -6,7 +6,7 @@ class HumanPlayer(Player):
     def __init__(self, player_args, game_args) -> None:
         super().__init__(player_args, game_args)
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         print("CARD COUNTS:\t", card_counts)
         print(
             "PILE:\t",
@@ -61,9 +61,6 @@ class HumanPlayer(Player):
                 except IndexError:
                     print("Please give a valid input")
                     continue
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_card_rejection(self, card):  # pile, card_counts,
         super().on_card_rejection(card)  # pile, card_counts,

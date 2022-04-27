@@ -25,7 +25,7 @@ class FirstRLPlayer(Player):
             self.action_space, self.ss_size, player_args, game_args
         )
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         is_valid = False
@@ -69,9 +69,6 @@ class FirstRLPlayer(Player):
             self.hand.remove(card_picked)
         return card_picked
 
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
-
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
 
@@ -99,7 +96,7 @@ class SecondRLPlayer(Player):
             self.action_space, self.ss_size, player_args, game_args
         )
 
-    def on_turn(self, pile, card_counts):
+    def on_turn(self, pile, card_counts, drawn):
 
         top_of_pile = pile[-1]
 
@@ -135,9 +132,6 @@ class SecondRLPlayer(Player):
         if card:
             self.hand.remove(card)
         return card
-
-    def on_draw(self, pile, card_counts):
-        return self.on_turn(pile, card_counts)
 
     def on_card_rejection(self, card):
         super().on_card_rejection(card)
