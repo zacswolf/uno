@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 from torch.autograd import Variable
 from card import Card
+from load_args import ArgsGameShared, ArgsPlayer
 from players.common.misc import act_filter
 
 from players.common.action_space import ActionSpace
@@ -13,7 +14,11 @@ from players.common.action_space import ActionSpace
 
 class PolicyNet(ABC):
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, player_args, game_args
+        self,
+        action_space: ActionSpace,
+        ss_size: int,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
     ) -> None:
         super().__init__()
 

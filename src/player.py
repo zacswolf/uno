@@ -3,9 +3,11 @@ from card import Card
 from typing import Callable
 from abc import ABC, abstractmethod
 
+from load_args import ArgsGameShared, ArgsPlayer
+
 
 class Player(ABC):
-    def __init__(self, player_args, game_args) -> None:
+    def __init__(self, player_args: ArgsPlayer, game_args: ArgsGameShared) -> None:
         self.hand: list[Card] = []
 
         self.player_args = player_args
@@ -26,6 +28,7 @@ class Player(ABC):
         Args:
             pile (list[Card]): The pile
             card_counts (list[int]): List of all players card counts relative to the player
+            drawn (bool): True if the player just drew
 
         Raises:
             NotImplementedError: Inherited Player must impliment
@@ -33,10 +36,11 @@ class Player(ABC):
         Returns:
             Card | None: Card to play card or None to draw
         """
+
         raise NotImplementedError()
 
     # Called when game rejects player's card
-    def on_card_rejection(self, card: Card) -> None:  # self, pile, card_counts, card
+    def on_card_rejection(self, card: Card) -> None:
         """Called when game rejects player's card
 
         Args:
@@ -45,7 +49,7 @@ class Player(ABC):
         self.hand.append(card)
 
     # Winner is a player index relative to player or -1 if no-one wins
-    def on_finish(self, winner:int) -> None:
+    def on_finish(self, winner: int) -> None:
         """Called when game is done or there is an error, optional override
 
         Args:

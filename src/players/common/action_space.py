@@ -3,11 +3,12 @@ from card import Card
 import numpy as np
 
 from enums import Color, Type
+from load_args import ArgsGameShared
 from players.common.misc import color_map, reverse_color_map
 
 
 class ActionSpace(ABC):
-    def __init__(self, game_args) -> None:
+    def __init__(self, game_args: ArgsGameShared) -> None:
         super().__init__()
 
         self.NUM_TYPES = Type.DRAW4 + 1

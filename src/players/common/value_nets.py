@@ -3,12 +3,18 @@ import os
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+from load_args import ArgsGameShared, ArgsPlayer
 
 from players.common.state_space import StateSpace
 
 
 class ValueNet(ABC):
-    def __init__(self, state_space: StateSpace, player_args, game_args) -> None:
+    def __init__(
+        self,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
+    ) -> None:
         super().__init__()
         self.state_space = state_space
         self.ss_size = self.state_space.size()

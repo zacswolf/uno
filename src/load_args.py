@@ -31,7 +31,7 @@ class ArgsGame:
 
 
 @dataclass
-class ArgsPlayers:
+class ArgsPlayer:
     player: str
     value_net: str = ""
     policy_net: str = ""
@@ -41,7 +41,7 @@ class ArgsPlayers:
 @dataclass
 class Args:
     game: ArgsGame
-    players: list[ArgsPlayers]
+    players: list[ArgsPlayer]
 
 
 def load_args() -> Args:
@@ -222,7 +222,7 @@ def load_args() -> Args:
 
     # Create players data class
     for idx, player in enumerate(arg_dict["players"]):
-        arg_dict["players"][idx] = ArgsPlayers(**player)
+        arg_dict["players"][idx] = ArgsPlayer(**player)
 
     ab = Args(**arg_dict)
 
