@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as f
 
 
-def epsilon_soft_sample(action_dist, action_mask, epsilon=1):
+def epsilon_soft_sample(action_dist, action_mask, epsilon=1) -> int:
     if np.random.random() < epsilon:
         # softmax
         val_action_idxs = np.flatnonzero(action_mask)
@@ -18,7 +18,7 @@ def epsilon_soft_sample(action_dist, action_mask, epsilon=1):
         return parent_idx
 
 
-def epsilon_greedy_sample(action_dist, action_mask, epsilon=0):
+def epsilon_greedy_sample(action_dist, action_mask, epsilon=0) -> int:
     if np.random.random() < epsilon:
         # unif random
         val_action_idxs = np.flatnonzero(action_mask)

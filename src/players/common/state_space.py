@@ -1,10 +1,17 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from card import Card
 import numpy as np
 
 from enums import Color, Type
 from load_args import ArgsGameShared
-from players.common.misc import color_map
+from players.common.misc import color_map, reverse_color_map
+
+
+@dataclass
+class State:
+    state: np.ndarray
+    meta: dict | None = None
 
 
 class StateSpace(ABC):
@@ -25,8 +32,21 @@ class StateSpace(ABC):
     @abstractmethod
     def get_state(
         self, hand: list[Card], top_of_pile: Card, card_counts: list[int]
-    ) -> np.ndarray:
+    ) -> State:
         raise NotImplementedError()
+
+    @abstractmethod
+    def get_hand(self, state: State) -> list[Card]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_top_of_pile(self, state: State) -> Card:
+        raise NotImplementedError()
+
+    # TODO: Impliment the following, add card count rotations for multi player games, save rotation is args game shared
+    # @abstractmethod
+    # def get_card_counts(self, state: State):
+    #     raise NotImplementedError()
 
 
 class SSRep1(StateSpace):
@@ -47,7 +67,9 @@ class SSRep1(StateSpace):
     def size(self) -> int:
         return self.ss_length
 
-    def get_state(self, hand: list[Card], top_of_pile: Card, card_counts: list[int]):
+    def get_state(
+        self, hand: list[Card], top_of_pile: Card, card_counts: list[int]
+    ) -> State:
         # ASSUME: 2 players only
 
         # top of pile [onehot color, onehot type]
@@ -90,7 +112,50 @@ class SSRep1(StateSpace):
         # card counts
         ss[-len(card_counts) :] = card_counts
 
-        return ss
+        return State(ss)
+
+    def get_hand(self, state: State) -> list[Card]:
+        hand = []
+
+        for color in range(self.NUM_COLORS_NON_WILD):
+            for c_type in range(self.NUM_TYPES_NON_WILD):
+                for _ in range(
+                    int(
+                        state.state[
+                            self.NUM_COLORS_NON_WILD
+                            + self.NUM_TYPES
+                            + color * self.NUM_TYPES_NON_WILD
+                            + c_type
+                        ]
+                    )
+                ):
+                    hand.append(Card(Type(c_type), Color(color)))
+
+        for c_type in range(self.NUM_TYPES_WILD):
+            for _ in range(
+                int(
+                    state.state[
+                        self.NUM_COLORS_NON_WILD
+                        + self.NUM_TYPES
+                        + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                        + c_type
+                    ]
+                )
+            ):
+                hand.append(Card(Type(c_type + Type.CHANGECOLOR), Color.WILD))
+
+        return hand
+
+    def get_top_of_pile(self, state: State) -> Card:
+        color = Color(np.flatnonzero(state.state[: self.NUM_COLORS_NON_WILD]))
+        type = Type(
+            np.flatnonzero(
+                state.state[
+                    self.NUM_COLORS_NON_WILD : self.NUM_COLORS_NON_WILD + self.NUM_TYPES
+                ]
+            )
+        )
+        return Card(type, color)
 
 
 class SSRep2(StateSpace):
@@ -111,7 +176,9 @@ class SSRep2(StateSpace):
     def size(self) -> int:
         return self.ss_length
 
-    def get_state(self, hand: list[Card], top_of_pile: Card, card_counts: list[int]):
+    def get_state(
+        self, hand: list[Card], top_of_pile: Card, card_counts: list[int]
+    ) -> State:
         # ASSUME: 2 players only
 
         # top of pile [onehot type]
@@ -152,7 +219,44 @@ class SSRep2(StateSpace):
         # card counts
         ss[-len(card_counts) :] = card_counts
 
-        return ss
+        return State(ss, {"color": top_of_pile.color})
+
+    def get_hand(self, state: State) -> list[Card]:
+        hand = []
+        for color in range(self.NUM_COLORS_NON_WILD):
+            for c_type in range(self.NUM_TYPES_NON_WILD):
+                for _ in range(
+                    int(
+                        state.state[
+                            self.NUM_TYPES + color * self.NUM_TYPES_NON_WILD + c_type
+                        ]
+                    )
+                ):
+                    hand.append(
+                        Card(
+                            Type(c_type),
+                            Color(reverse_color_map(color, state.meta["color"])),
+                        )
+                    )
+
+        for c_type in range(self.NUM_TYPES_WILD):
+            for _ in range(
+                int(
+                    state.state[
+                        self.NUM_TYPES
+                        + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                        + c_type
+                    ]
+                )
+            ):
+                hand.append(Card(Type(c_type + Type.CHANGECOLOR), Color.WILD))
+
+        return hand
+
+    def get_top_of_pile(self, state: State) -> Card:
+        color = state.meta["color"]
+        type = Type(np.flatnonzero(state.state[: self.NUM_TYPES]))
+        return Card(type, color)
 
 
 # Inject game knowledge

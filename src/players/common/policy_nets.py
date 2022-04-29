@@ -8,24 +8,27 @@ from torch.autograd import Variable
 from card import Card
 from load_args import ArgsGameShared, ArgsPlayer
 from players.common import sampler
+from players.common import state_space
 from players.common.misc import val_action_mask
 
 from players.common.action_space import ActionSpace
+from players.common.state_space import State, StateSpace
 
 
 class PolicyNet(ABC):
     def __init__(
         self,
         action_space: ActionSpace,
-        ss_size: int,
+        state_space: StateSpace,
         player_args: ArgsPlayer,
         game_args: ArgsGameShared,
     ) -> None:
         super().__init__()
 
         self.action_space = action_space
-        self.ss_size = ss_size
+        self.state_space = state_space
         self.as_size = self.action_space.size()
+        self.ss_size = self.state_space.size()
 
         self.net: torch.nn.Module
 
@@ -39,11 +42,11 @@ class PolicyNet(ABC):
 
     @abstractmethod
     # Note: params probably wont generalize to all policy nets
-    def update(self, state, action: Card | None, reward: float) -> None:
+    def update(self, state: State, action: Card | None, reward: float) -> None:
         """Update policy of choosing action while in state state
 
         Args:
-            state (_type_): State that's in state_space
+            state (State): State that's in state_space
             action (Card | None): Action played on state
             reward (float): Reward
 
@@ -53,12 +56,14 @@ class PolicyNet(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_action(self, hand: list[Card], state, top_of_pile: Card) -> Card | None:
+    def get_action(
+        self, hand: list[Card], state: State, top_of_pile: Card
+    ) -> Card | None:
         """Get action from state
 
         Args:
             hand (list[Card]): Player's hand
-            state (_type_): State that's in state_space
+            state (State): State that's in state_space
             top_of_pile (Card): Card on the top of the pile
 
         Raises:
@@ -105,9 +110,13 @@ class PolNetBasic(PolicyNet):
     """
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, player_args, game_args
+        self,
+        action_space: ActionSpace,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
     ) -> None:
-        super().__init__(action_space, ss_size, player_args, game_args)
+        super().__init__(action_space, state_space, player_args, game_args)
 
         n_hidden = 128
 
@@ -142,13 +151,13 @@ class PolNetBasic(PolicyNet):
 
         self.net.train()
 
-        state = Variable(torch.from_numpy(state).type(torch.float32))
+        state_torch = Variable(torch.from_numpy(state.state).type(torch.float32))
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
         action_idx = self.action_space.card_to_idx(action)
 
-        log_prob = self.net(state)[action_idx]
+        log_prob = self.net(state_torch)[action_idx]
         loss = -1 * reward * log_prob
 
         self.optimizer.zero_grad()  # clear grad
@@ -159,8 +168,8 @@ class PolNetBasic(PolicyNet):
         self.net.eval()
 
         # Get action dist from state
-        state = torch.from_numpy(state).type(torch.float32)
-        action_dist = self.net(state).detach().numpy()
+        state_torch = torch.from_numpy(state.state).type(torch.float32)
+        action_dist = self.net(state_torch).detach().numpy()
 
         # Sample
         # TODO: Not using sample method because we did it differently
@@ -174,9 +183,13 @@ class PolNetValActions(PolicyNet):
     """Policy Net that checks if a card is valid"""
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, player_args, game_args
+        self,
+        action_space: ActionSpace,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
     ) -> None:
-        super().__init__(action_space, ss_size, player_args, game_args)
+        super().__init__(action_space, state_space, player_args, game_args)
 
         self.epsilon = player_args.epsilon
         n_hidden = 128
@@ -216,13 +229,13 @@ class PolNetValActions(PolicyNet):
 
         self.net.train()
 
-        state = Variable(torch.from_numpy(state).type(torch.float32))
+        state_torch = Variable(torch.from_numpy(state.state).type(torch.float32))
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
         action_idx = self.action_space.card_to_idx(action)
 
-        log_prob = self.net(state)[action_idx]
+        log_prob = self.net(state_torch)[action_idx]
         loss = -1 * reward * log_prob
 
         self.optimizer.zero_grad()  # clear grad
@@ -233,8 +246,8 @@ class PolNetValActions(PolicyNet):
         self.net.eval()
 
         # Get action dist from state
-        state = torch.from_numpy(state).type(torch.float32)
-        action_dist = self.net(state).detach().numpy()
+        state_torch = torch.from_numpy(state.state).type(torch.float32)
+        action_dist = self.net(state_torch).detach().numpy()
 
         # Morph action dist to only include valid cards
 
@@ -245,16 +258,16 @@ class PolNetValActions(PolicyNet):
         valid_action_dist = action_dist[val_actions_mask]
 
         # Normalize
-        # TODO: Softmax this shit
-        dist_sum = np.sum(valid_action_dist)
-        if dist_sum == 0:
-            valid_action_dist = None
+        dist_sum = float(np.sum(valid_action_dist))
+        if dist_sum == 0.0:
+            action_dist = np.ones(action_dist.shape)
+            action_dist /= np.linalg.norm(action_dist)
         else:
-            valid_action_dist = valid_action_dist / dist_sum
+            action_dist /= dist_sum
 
         # Sample epsilon soft but bc its already softmaxed its just e-greedy
         action_idx = sampler.epsilon_greedy_sample(
-            valid_action_dist, val_actions_mask, self.epsilon
+            action_dist, val_actions_mask, self.epsilon
         )
 
         # Convert to card
@@ -265,9 +278,13 @@ class PolNetValActionsSoftmax(PolicyNet):
     """Policy Net that checks if a card is valid and does a smart softmax"""
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, player_args, game_args
+        self,
+        action_space: ActionSpace,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
     ) -> None:
-        super().__init__(action_space, ss_size, player_args, game_args)
+        super().__init__(action_space, state_space, player_args, game_args)
 
         n_hidden = 128
         self.epsilon = player_args.epsilon
@@ -297,20 +314,20 @@ class PolNetValActionsSoftmax(PolicyNet):
         if self.policy_load:
             self.load(self.policy_load)
 
-    def update(self, wrapped_state, action, reward):
+    def update(self, state, action, reward):
         """
-        wrapped_state: wrapped_state dict that contains S_t, hand_t, and top_of_pile_t
+        state: state that can create S_t, hand_t, and top_of_pile_t
         action: action A_t
         reward: G-v(S_t,w) or just G or just R'
         """
 
         self.net.train()
 
-        state = wrapped_state["state"]
-        hand = wrapped_state["hand"]
-        top_of_pile = wrapped_state["top_of_pile"]
+        state_np = state.state
+        hand = self.state_space.get_hand(state)
+        top_of_pile = self.state_space.get_top_of_pile(state)
 
-        state = Variable(torch.from_numpy(state).type(torch.float32))
+        state_torch = Variable(torch.from_numpy(state_np).type(torch.float32))
         reward = Variable(torch.FloatTensor([reward]))
 
         # Maps card to action idx
@@ -325,10 +342,10 @@ class PolNetValActionsSoftmax(PolicyNet):
             action == check_card
         ), f"action space is not lineing up {action} : {check_card}"
 
-        action_vals = self.net(state)
+        action_vals = self.net(state_torch)
         val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
         action_vals[val_actions_mask] = f.softmax(action_vals[val_actions_mask], -1)
-        action_vals[not val_actions_mask] = 0
+        action_vals[np.logical_not(val_actions_mask)] = 0
 
         log_prob = action_vals[action_idx]
         loss = -1 * reward * log_prob
@@ -341,25 +358,18 @@ class PolNetValActionsSoftmax(PolicyNet):
         self.net.eval()
 
         # Get action dist from state
-        state = torch.from_numpy(state).type(torch.float32)
-        action_vals = self.net(state).detach()  # .numpy()
-
-        # Morph action dist to only include valid cards
-
-        # Get valid action idxs
+        state_torch = torch.from_numpy(state.state).type(torch.float32)
+        action_vals = self.net(state_torch).detach().numpy()
         assert self.as_size == action_vals.shape[0]
-        val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
 
         # Turn into a valid distribution using invalid action masking
         # https://costa.sh/blog-a-closer-look-at-invalid-action-masking-in-policy-gradient-algorithms.html
-        valid_action_vals = action_vals[val_actions_mask]
 
-        valid_action_dist = f.softmax(valid_action_vals, -1).numpy()
+        val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
 
-        # Sample
-        # Sample epsilon soft but bc its already softmaxed its just e-greedy
-        action_idx = sampler.epsilon_greedy_sample(
-            valid_action_dist, val_actions_mask, self.epsilon
+        # Sample epsilon soft
+        action_idx = sampler.epsilon_soft_sample(
+            action_vals, val_actions_mask, self.epsilon
         )
 
         # Convert to card

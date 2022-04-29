@@ -17,7 +17,7 @@ class ReinforceValActions(Player):
         self.action_space = action_space.ASRep1(game_args)
 
         self.policy = policy_nets.PolNetValActions(
-            self.action_space, self.state_space.size(), player_args, game_args
+            self.action_space, self.state_space, player_args, game_args
         )
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
         self.gamma = player_args.gamma
@@ -31,7 +31,7 @@ class ReinforceValActions(Player):
 
         # Get state
         state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
-        assert state.shape[0] == self.state_space.size()
+        assert state.state.shape[0] == self.state_space.size()
         self.state_history.append(state)
 
         # Get card
@@ -74,7 +74,10 @@ class ReinforceValActions(Player):
 
         for t, (s, a) in enumerate(zip(self.state_history, self.action_history)):
             # G = reward
-            G = sum(pow(self.gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
+            G = sum(
+                pow(self.gamma, k - t - 1) * self.reward_history[k]
+                for k in range(t + 1, T + 1)
+            )
             # G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
 
             delta = G - self.value.get_value(s)
@@ -118,11 +121,11 @@ class ReinforceValActionsSoftmax(Player):
         self.action_space = action_space.ASRep1(game_args)
 
         self.policy = policy_nets.PolNetValActionsSoftmax(
-            self.action_space, self.state_space.size(), player_args, game_args
+            self.action_space, self.state_space, player_args, game_args
         )
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
         self.gamma = player_args.gamma
-        
+
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
@@ -132,14 +135,9 @@ class ReinforceValActionsSoftmax(Player):
 
         # Get state
         state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
-        assert state.shape[0] == self.state_space.size()
+        assert state.state.shape[0] == self.state_space.size()
 
-        wrapped_state = {
-            "state": state,
-            "hand": copy.deepcopy(self.hand),
-            "top_of_pile": copy.copy(top_of_pile),
-        }
-        self.state_history.append(wrapped_state)
+        self.state_history.append(state)
 
         # Get card
         card = self.policy.get_action(self.hand, state, top_of_pile)
@@ -179,16 +177,18 @@ class ReinforceValActionsSoftmax(Player):
 
         T = len(self.state_history)
 
-        for t, (ws, a) in enumerate(zip(self.state_history, self.action_history)):
+        for t, (s, a) in enumerate(zip(self.state_history, self.action_history)):
             # G = reward
-            G = sum(pow(self.gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
+            G = sum(
+                pow(self.gamma, k - t - 1) * self.reward_history[k]
+                for k in range(t + 1, T + 1)
+            )
             # G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
 
-            s = ws["state"]
             delta = G - self.value.get_value(s)
             if self.update:
                 self.value.update(s, G)
-                self.policy.update(ws, a, delta * pow(self.gamma, t))
+                self.policy.update(s, a, delta * pow(self.gamma, t))
 
         # Reset for next game
         self.state_history = []
@@ -226,7 +226,7 @@ class ReinforceValActionsSoftmax2(Player):
         self.action_space = action_space.ASRep2(game_args)
 
         self.policy = policy_nets.PolNetValActionsSoftmax(
-            self.action_space, self.state_space.size(), player_args, game_args
+            self.action_space, self.state_space, player_args, game_args
         )
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
         self.gamma = player_args.gamma
@@ -240,14 +240,9 @@ class ReinforceValActionsSoftmax2(Player):
 
         # Get state
         state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
-        assert state.shape[0] == self.state_space.size()
+        assert state.state.shape[0] == self.state_space.size()
 
-        wrapped_state = {
-            "state": state,
-            "hand": copy.deepcopy(self.hand),
-            "top_of_pile": copy.copy(top_of_pile),
-        }
-        self.state_history.append(wrapped_state)
+        self.state_history.append(state)
 
         # Get card
         card = self.policy.get_action(self.hand, state, top_of_pile)
@@ -287,16 +282,18 @@ class ReinforceValActionsSoftmax2(Player):
 
         T = len(self.state_history)
 
-        for t, (ws, a) in enumerate(zip(self.state_history, self.action_history)):
+        for t, (s, a) in enumerate(zip(self.state_history, self.action_history)):
             # G = reward
-            G = sum(pow(self.gamma, k - t - 1) * self.reward_history[k] for k in range(t + 1, T + 1))
+            G = sum(
+                pow(self.gamma, k - t - 1) * self.reward_history[k]
+                for k in range(t + 1, T + 1)
+            )
             # G = sum(self.reward_history[k] for k in range(t + 1, T + 1))
 
-            s = ws["state"]
             delta = G - self.value.get_value(s)
             if self.update:
                 self.value.update(s, G)
-                self.policy.update(ws, a, delta * pow(self.gamma, t))
+                self.policy.update(s, a, delta * pow(self.gamma, t))
 
         # Reset for next game
         self.state_history = []

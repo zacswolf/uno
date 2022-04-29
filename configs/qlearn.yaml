@@ -1,0 +1,16 @@
+game:
+  shared: # Shared with players
+    num_players: 2
+    num_games: 25
+  private: # Hidden from players
+    with_replacement: True
+    num_cards: 4
+    alternate: True
+    draw_skip: True
+    
+
+players:
+  - player: qlearn
+    epsilon: .3
+  - player: decent4
+

@@ -18,7 +18,10 @@ def val_action_mask(
     """
     as_size = action_space.size()
 
-    cards = (action_space.idx_to_card(action_idx) for action_idx in range(as_size))
+    cards = (
+        action_space.idx_to_card(action_idx, hand, top_of_pile)
+        for action_idx in range(as_size)
+    )
 
     return np.array(
         [
