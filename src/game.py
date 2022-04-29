@@ -18,7 +18,7 @@ class Game:
             self.num_players = args.game.shared.num_players
             self.draw_skip = args.game.private.draw_skip
             self.alternate = args.game.private.alternate
-            
+
             if self.num_players < 2 or self.num_players > 10:
                 raise ValueError("Invalid number of players")
             elif self.num_players != len(args.players):
@@ -222,7 +222,7 @@ class Game:
                 if card.can_play_on(self.pile[-1]):
                     valid_card = True
 
-                    assert card.color != Color.WILD, "Wild wasn't colored"
+                    assert card.color != Color.WILD, "Wild wasn't colored: {card}"
 
                     if card.type >= Type.CHANGECOLOR:
                         # Wild is already colored

@@ -10,21 +10,24 @@ from players.common import sampler
 from players.common.misc import val_action_mask
 
 from players.common.action_space import ActionSpace
+from players.common.state_space import State, StateSpace
 
 
 class ActionValueNet(ABC):
     def __init__(
         self,
         action_space: ActionSpace,
-        ss_size: int,
+        state_space: StateSpace,
         player_args: ArgsPlayer,
         game_args: ArgsGameShared,
     ) -> None:
         super().__init__()
 
         self.action_space = action_space
-        self.ss_size = ss_size
+        self.state_space = state_space
+
         self.as_size = self.action_space.size()
+        self.ss_size = self.state_space.size()
 
         self.net: torch.nn.Module
 
@@ -40,7 +43,7 @@ class ActionValueNet(ABC):
     # Note: params probably wont generalize to all policy nets
     def update(
         self,
-        state,
+        state: State,
         action: Card | None,
         target: float,
         action_validity_mask: np.ndarray | None = None,
@@ -59,7 +62,7 @@ class ActionValueNet(ABC):
 
     @abstractmethod
     def get_action_data(
-        self, hand: list[Card], state, top_of_pile: Card
+        self, hand: list[Card], state: State, top_of_pile: Card
     ) -> tuple[np.ndarray, np.ndarray]:
         """Get action data from state
 
@@ -78,7 +81,9 @@ class ActionValueNet(ABC):
         """
         raise NotImplementedError()
 
-    def get_action(self, hand: list[Card], state, top_of_pile: Card) -> Card | None:
+    def get_action(
+        self, hand: list[Card], state: State, top_of_pile: Card
+    ) -> Card | None:
         """Get action from state
 
         Args:
@@ -127,9 +132,13 @@ class AVNetValActions(ActionValueNet):
     """Action Value Net that checks if a card is valid"""
 
     def __init__(
-        self, action_space: ActionSpace, ss_size: int, player_args, game_args
+        self,
+        action_space: ActionSpace,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
     ) -> None:
-        super().__init__(action_space, ss_size, player_args, game_args)
+        super().__init__(action_space, state_space, player_args, game_args)
 
         n_hidden = 128
         self.epsilon = player_args.epsilon
@@ -159,7 +168,13 @@ class AVNetValActions(ActionValueNet):
         if self.policy_load:
             self.load(self.policy_load)
 
-    def update(self, state, action, target, action_validity_mask=None):
+    def update(
+        self,
+        state: State,
+        action: Card | None,
+        target: float,
+        action_validity_mask: np.ndarray | None = None,  # Not really necessary
+    ):
         """
         state: state S_t
         action: action A_t
@@ -168,7 +183,7 @@ class AVNetValActions(ActionValueNet):
 
         self.net.train()
 
-        state = Variable(torch.from_numpy(state).type(torch.float32))
+        state_torch = Variable(torch.from_numpy(state.state).type(torch.float32))
         target = Variable(torch.FloatTensor([target]))
 
         # Maps card to action idx
@@ -177,7 +192,7 @@ class AVNetValActions(ActionValueNet):
         if action_validity_mask is not None:
             assert action_validity_mask[action_idx]
 
-        prediction = self.net(state)[action_idx]
+        prediction = self.net(state_torch)[action_idx]
         loss = torch.square(target - prediction)
 
         self.optimizer.zero_grad()  # clear grad
@@ -189,8 +204,8 @@ class AVNetValActions(ActionValueNet):
         self.net.eval()
 
         # Get action vals from state
-        state = torch.from_numpy(state).type(torch.float32)
-        action_vals = self.net(state).detach().numpy()
+        state_torch = torch.from_numpy(state.state).type(torch.float32)
+        action_vals = self.net(state_torch).detach().numpy()
 
         # Get valid action mask
         assert self.as_size == action_vals.shape[0]
