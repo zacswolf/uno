@@ -491,6 +491,14 @@ class DecentPlayer4(Player):
         super().__init__(player_idx, args)
 
     def on_turn(self, pile, card_counts, drawn):
+        # lazy bug ~fix~
+        card = self.pick_card(pile, card_counts, drawn)
+
+        if card and card.color == Color.WILD:
+            card.color = self.on_choose_wild_color()
+        return card
+
+    def pick_card(self, pile, card_counts, drawn):
         top_of_pile = pile[-1]
 
         # Shuffle
