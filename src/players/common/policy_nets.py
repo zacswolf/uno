@@ -7,7 +7,8 @@ import torch.nn.functional as f
 from torch.autograd import Variable
 from card import Card
 from load_args import ArgsGameShared, ArgsPlayer
-from players.common.misc import act_filter, sample
+from players.common import sampler
+from players.common.misc import val_action_mask
 
 from players.common.action_space import ActionSpace
 
@@ -80,9 +81,9 @@ class PolicyNet(ABC):
             policy_model_file = os.path.join(self.model_dir, self.policy_load)
         else:
             policy_model_file = os.path.join(
-            self.model_dir,
-            f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt",
-        )
+                self.model_dir,
+                f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt",
+            )
 
         # Note: We are not saving/loading optimizer state
         torch.save(self.net.state_dict(), policy_model_file)
@@ -98,7 +99,10 @@ class PolicyNet(ABC):
 
 
 class PolNetBasic(PolicyNet):
-    """Policy Net that doesn't check if a card is valid"""
+    """Policy Net that doesn't check if a card is valid
+
+    Don't use this
+    """
 
     def __init__(
         self, action_space: ActionSpace, ss_size: int, player_args, game_args
@@ -158,7 +162,7 @@ class PolNetBasic(PolicyNet):
         state = torch.from_numpy(state).type(torch.float32)
         action_dist = self.net(state).detach().numpy()
 
-        # Sample 
+        # Sample
         # TODO: Not using sample method because we did it differently
         action_idx = np.random.choice(np.arange(self.as_size), p=action_dist)
 
@@ -174,6 +178,7 @@ class PolNetValActions(PolicyNet):
     ) -> None:
         super().__init__(action_space, ss_size, player_args, game_args)
 
+        self.epsilon = 0.5
         n_hidden = 128
 
         self.net = nn.Sequential(
@@ -235,13 +240,9 @@ class PolNetValActions(PolicyNet):
 
         # Get valid action idxs
         assert self.as_size == action_dist.shape[0]
-        valid_actions_idxs = [
-            action_idx
-            for action_idx in range(self.as_size)
-            if act_filter(hand, self.action_space.idx_to_card(action_idx), top_of_pile)
-        ]
 
-        valid_action_dist = action_dist[valid_actions_idxs]
+        val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
+        valid_action_dist = action_dist[val_actions_mask]
 
         # Normalize
         # TODO: Softmax this shit
@@ -251,8 +252,10 @@ class PolNetValActions(PolicyNet):
         else:
             valid_action_dist = valid_action_dist / dist_sum
 
-        # Sample
-        action_idx = sample(valid_actions_idxs, valid_action_dist, 0.5)
+        # Sample epsilon soft but bc its already softmaxed its just e-greedy
+        action_idx = sampler.epsilon_greedy_sample(
+            valid_action_dist, val_actions_mask, self.epsilon
+        )
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
@@ -267,6 +270,7 @@ class PolNetValActionsSoftmax(PolicyNet):
         super().__init__(action_space, ss_size, player_args, game_args)
 
         n_hidden = 128
+        self.epsilon = 0.5
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
@@ -322,20 +326,9 @@ class PolNetValActionsSoftmax(PolicyNet):
         ), f"action space is not lineing up {action} : {check_card}"
 
         action_vals = self.net(state)
-        valid_actions_bool_mask = [
-            act_filter(
-                hand,
-                self.action_space.idx_to_card(
-                    action_idx, hand=hand, top_of_pile=top_of_pile
-                ),
-                top_of_pile,
-            )
-            for action_idx in range(self.as_size)
-        ]
-        action_vals[valid_actions_bool_mask] = f.softmax(
-            action_vals[valid_actions_bool_mask], -1
-        )
-        action_vals[not valid_actions_bool_mask] = 0
+        val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
+        action_vals[val_actions_mask] = f.softmax(action_vals[val_actions_mask], -1)
+        action_vals[not val_actions_mask] = 0
 
         log_prob = action_vals[action_idx]
         loss = -1 * reward * log_prob
@@ -355,26 +348,19 @@ class PolNetValActionsSoftmax(PolicyNet):
 
         # Get valid action idxs
         assert self.as_size == action_vals.shape[0]
-        valid_actions_idxs = [
-            action_idx
-            for action_idx in range(self.as_size)
-            if act_filter(
-                hand,
-                self.action_space.idx_to_card(
-                    action_idx, hand=hand, top_of_pile=top_of_pile
-                ),
-                top_of_pile,
-            )
-        ]
+        val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
 
         # Turn into a valid distribution using invalid action masking
         # https://costa.sh/blog-a-closer-look-at-invalid-action-masking-in-policy-gradient-algorithms.html
-        valid_action_vals = action_vals[valid_actions_idxs]
+        valid_action_vals = action_vals[val_actions_mask]
 
         valid_action_dist = f.softmax(valid_action_vals, -1).numpy()
 
         # Sample
-        action_idx = sample(valid_actions_idxs, valid_action_dist, 0.5)
+        # Sample epsilon soft but bc its already softmaxed its just e-greedy
+        action_idx = sampler.epsilon_greedy_sample(
+            valid_action_dist, val_actions_mask, self.epsilon
+        )
 
         # Convert to card
         return self.action_space.idx_to_card(
