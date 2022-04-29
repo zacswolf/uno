@@ -132,7 +132,7 @@ class AVNetValActions(ActionValueNet):
         super().__init__(action_space, ss_size, player_args, game_args)
 
         n_hidden = 128
-        self.epsilon = 0.1
+        self.epsilon = player_args.epsilon
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),

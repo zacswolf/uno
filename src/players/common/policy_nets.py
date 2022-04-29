@@ -178,7 +178,7 @@ class PolNetValActions(PolicyNet):
     ) -> None:
         super().__init__(action_space, ss_size, player_args, game_args)
 
-        self.epsilon = 0.5
+        self.epsilon = player_args.epsilon
         n_hidden = 128
 
         self.net = nn.Sequential(
@@ -270,7 +270,7 @@ class PolNetValActionsSoftmax(PolicyNet):
         super().__init__(action_space, ss_size, player_args, game_args)
 
         n_hidden = 128
-        self.epsilon = 0.5
+        self.epsilon = player_args.epsilon
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),

@@ -35,8 +35,9 @@ class ArgsPlayer:
     player: str
     value_net: str = ""
     policy_net: str = ""
-    gamma: int = 1
-    player_idx: int = -1
+    gamma: float = 1.0
+    epsilon: float = 1.0
+    player_idx: int = -1  # defined in code
 
 
 @dataclass
