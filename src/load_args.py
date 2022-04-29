@@ -90,21 +90,21 @@ def load_args() -> Args:
         type=int,
         help="Number of games to play",
     )
-    my_parser.add_argument(
-        "--value_net",
-        nargs="+",
-        help="File locations of value_net to initialize with",
-    )
-    my_parser.add_argument(
-        "--policy_net",
-        nargs="+",
-        help="File locations of policy_net to initialize with",
-    )
-    my_parser.add_argument(
-        "--gamma",
-        nargs="+",
-        help="Gamma for each player",
-    )
+    # my_parser.add_argument(
+    #     "--value_net",
+    #     nargs="+",
+    #     help="File locations of value_net to initialize with",
+    # )
+    # my_parser.add_argument(
+    #     "--policy_net",
+    #     nargs="+",
+    #     help="File locations of policy_net to initialize with",
+    # )
+    # my_parser.add_argument(
+    #     "--gamma",
+    #     nargs="+",
+    #     help="Gamma for each player",
+    # )
     my_parser.add_argument(
         "--update",
         action=argparse.BooleanOptionalAction,
@@ -125,12 +125,6 @@ def load_args() -> Args:
 
     # assert args.num_players == 2
 
-    # Add custom values to the namespace
-    # d = vars(args)
-    # d["root_file"] = os.path.dirname(__file__)
-    # d["run_name"] = datetime.now().strftime("%m_%d_%H_%M_%S")
-    # d["model_dir"] = os.path.join(args.root_file, "../models/")
-    # d["config_dir"] = os.path.join(args.root_file, "../configs/")
     root_file = os.path.dirname(__file__)
     config_dir = os.path.join(root_file, "../configs/")
 
@@ -152,46 +146,57 @@ def load_args() -> Args:
         "config_dir": config_dir,
     }
 
+    # No longer support player specific args via commandline
     arg_dict["players"] = []
+    # if args.players:
+    # value_nets = args.value_net
+    # policy_nets = args.policy_net
+    # gammas = args.gamma
+
+    # # Process value_net
+    # if value_nets:
+    #     assert len(value_nets) <= len(args.players)
+    #     if len(value_nets) < len(args.players):
+    #         # Pad value net arg
+    #         value_nets += [""] * (len(args.players) - len(value_nets))
+    # else:
+    #     value_nets = [""] * len(args.players)
+
+    # # Process policy_net
+    # if policy_nets:
+    #     assert len(policy_nets) <= len(args.players)
+    #     if len(policy_nets) < len(args.players):
+    #         # Pad policy net arg
+    #         policy_nets += [""] * (len(args.players) - len(policy_nets))
+    # else:
+    #     policy_nets = [""] * len(args.players)
+
+    # # Process gammas
+    # if gammas:
+    #     assert len(gammas) <= len(args.players)
+    #     if len(gammas) < len(args.players):
+    #         # Pad policy net arg
+    #         gammas += [1] * (len(args.players) - len(gammas))
+    # else:
+    #     gammas = [1] * len(args.players)
+
+    # Add to arg_dict
+
+    # for (player, value_net, policy_net, gamma) in zip(
+    #     args.players, value_nets, policy_nets, gammas, strict=True
+    # ):
+    #     arg_dict["players"].append(
+    #         {
+    #             "player": player,
+    #             "value_net": value_net,
+    #             "policy_net": policy_net,
+    #             "gamma": gamma,
+    #         }
+    #     )
+
     if args.players:
-        value_nets = args.value_net
-        policy_nets = args.policy_net
-        gammas = args.gamma
-
-        # Process value_net
-        if value_nets:
-            assert len(value_nets) <= len(args.players)
-            if len(value_nets) < len(args.players):
-                # Pad value net arg
-                value_nets += [""] * (len(args.players) - len(value_nets))
-        else:
-            value_nets = [""] * len(args.players)
-
-        # Process policy_net
-        if policy_nets:
-            assert len(policy_nets) <= len(args.players)
-            if len(policy_nets) < len(args.players):
-                # Pad policy net arg
-                policy_nets += [""] * (len(args.players) - len(policy_nets))
-        else:
-            policy_nets = [""] * len(args.players)
-
-        # Process gammas
-        if gammas:
-            assert len(gammas) <= len(args.players)
-            if len(gammas) < len(args.players):
-                # Pad policy net arg
-                gammas += [1] * (len(args.players) - len(gammas))
-        else:
-            gammas = [1] * len(args.players)
-
-        # Add to arg_dict
-        for (player, value_net, policy_net, gamma) in zip(
-            args.players, value_nets, policy_nets, gammas, strict=True
-        ):
-            arg_dict["players"].append(
-                {"player": player, "value_net": value_net, "policy_net": policy_net, "gamma": gamma}
-            )
+        for player in args.players:
+            arg_dict["players"].append({"player": player})
 
     if args.conf:
         # we have a config file
