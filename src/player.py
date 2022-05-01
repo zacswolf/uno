@@ -120,8 +120,14 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
         case "onestepacsoft":
             from players.actorcritic import OneStepActorCriticSoft
             return OneStepActorCriticSoft
+        case "onesteprollout":
+            from players.onesteprollout import OneStepRollout
+            return OneStepRollout
         case "qlearn":
             from players.qlearning import QLearner
             return QLearner
+        case "onesteprollout":
+            from players.onesteprollout import OneStepRollout
+            return OneStepRollout
 
     raise ValueError("player string `%s` is invalid" % plyr_str)
