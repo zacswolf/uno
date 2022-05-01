@@ -12,16 +12,8 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "-n",
-                "2",
-                "--players",
-                "reinvalactsoft2",
-                "basic",
-                "--with_replacement",
-                "--num_games",
-                "15",
-                "--num_cards",
-                "7"
+                "--conf",
+                "example.yaml",
             ]
         }
     ]

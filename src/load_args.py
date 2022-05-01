@@ -35,8 +35,9 @@ class ArgsPlayer:
     player: str
     value_net: str = ""
     policy_net: str = ""
-    gamma: int = 1
-    player_idx: int = -1
+    gamma: float = 1.0
+    epsilon: float = 1.0
+    player_idx: int = -1  # defined in code
 
 
 @dataclass
@@ -101,11 +102,6 @@ def load_args() -> Args:
         help="File locations of policy_net to initialize with",
     )
     my_parser.add_argument(
-        "--gamma",
-        nargs="+",
-        help="Gamma for each player",
-    )
-    my_parser.add_argument(
         "--update",
         action=argparse.BooleanOptionalAction,
         help="Don't update any of the rl bots, just evaluate",
@@ -125,12 +121,6 @@ def load_args() -> Args:
 
     # assert args.num_players == 2
 
-    # Add custom values to the namespace
-    # d = vars(args)
-    # d["root_file"] = os.path.dirname(__file__)
-    # d["run_name"] = datetime.now().strftime("%m_%d_%H_%M_%S")
-    # d["model_dir"] = os.path.join(args.root_file, "../models/")
-    # d["config_dir"] = os.path.join(args.root_file, "../configs/")
     root_file = os.path.dirname(__file__)
     config_dir = os.path.join(root_file, "../configs/")
 
@@ -152,11 +142,11 @@ def load_args() -> Args:
         "config_dir": config_dir,
     }
 
+    # No longer support player specific args via commandline
     arg_dict["players"] = []
     if args.players:
         value_nets = args.value_net
         policy_nets = args.policy_net
-        gammas = args.gamma
 
         # Process value_net
         if value_nets:
@@ -176,22 +166,21 @@ def load_args() -> Args:
         else:
             policy_nets = [""] * len(args.players)
 
-        # Process gammas
-        if gammas:
-            assert len(gammas) <= len(args.players)
-            if len(gammas) < len(args.players):
-                # Pad policy net arg
-                gammas += [1] * (len(args.players) - len(gammas))
-        else:
-            gammas = [1] * len(args.players)
-
         # Add to arg_dict
-        for (player, value_net, policy_net, gamma) in zip(
-            args.players, value_nets, policy_nets, gammas, strict=True
+        for (player, value_net, policy_net) in zip(
+            args.players, value_nets, policy_nets, strict=True
         ):
             arg_dict["players"].append(
-                {"player": player, "value_net": value_net, "policy_net": policy_net, "gamma": gamma}
+                {
+                    "player": player,
+                    "value_net": value_net,
+                    "policy_net": policy_net,
+                }
             )
+
+    if args.players:
+        for player in args.players:
+            arg_dict["players"].append({"player": player})
 
     if args.conf:
         # we have a config file

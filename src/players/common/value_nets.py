@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from load_args import ArgsGameShared, ArgsPlayer
 
-from players.common.state_space import StateSpace
+from players.common.state_space import State, StateSpace
 
 
 class ValueNet(ABC):
@@ -30,11 +30,11 @@ class ValueNet(ABC):
         self.value_load = player_args.value_net
 
     @abstractmethod
-    def update(self, state, G: float) -> None:
+    def update(self, state: State, G: float) -> None:
         """Update value of state towards G
 
         Args:
-            state (_type_): State that's in state_space
+            state (State): State that's in state_space
             G (float): Reward
 
         Raises:
@@ -43,11 +43,11 @@ class ValueNet(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_value(self, state) -> float:
+    def get_value(self, state: State) -> float:
         """Get the value of state
 
         Args:
-            state (_type_): State that's in state_space
+            state (State): State that's in state_space
 
         Raises:
             NotImplementedError: Must be implimented by inherited class
@@ -66,7 +66,9 @@ class ValueNet(ABC):
         value_model_file = None
         if self.value_load:
             # Saves to same file loaded in
-            value_model_file = value_model_file = os.path.join(self.model_dir, self.value_load)
+            value_model_file = value_model_file = os.path.join(
+                self.model_dir, self.value_load
+            )
         else:
             value_model_file = os.path.join(
                 self.model_dir,
@@ -87,7 +89,12 @@ class ValueNet(ABC):
 
 
 class ValueNet1(ValueNet):
-    def __init__(self, state_space: StateSpace, player_args, game_args) -> None:
+    def __init__(
+        self,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
+    ) -> None:
         super().__init__(state_space, player_args, game_args)
 
         n_hidden = 128
@@ -114,9 +121,9 @@ class ValueNet1(ValueNet):
         self.net.train()
 
         G = Variable(torch.FloatTensor([G]))
-        state = Variable(torch.from_numpy(state).type(torch.float32))
+        state_torch = Variable(torch.from_numpy(state.state).type(torch.float32))
 
-        prediction = self.net(state)
+        prediction = self.net(state_torch)
         loss = self.loss_fnt(prediction, G)
 
         self.optimizer.zero_grad()  # clear grad
@@ -126,6 +133,6 @@ class ValueNet1(ValueNet):
     def get_value(self, state):
         self.net.eval()
 
-        state = torch.from_numpy(state).type(torch.float32)
-        value = self.net(state)
+        state_torch = torch.from_numpy(state.state).type(torch.float32)
+        value = self.net(state_torch)
         return value.item()

@@ -3,12 +3,33 @@ from enums import Color, Type
 import numpy as np
 
 
-def act_filter(hand, card: Card | None, top_of_pile: Card):
-    # True if can is in hand and can be played on top_of_pile
-    if card is None:
-        return True
-    else:
-        return card.can_play_on(top_of_pile) and card in hand
+def val_action_mask(
+    hand: list[Card], top_of_pile: Card, action_space  #: ActionSpace
+) -> np.ndarray:
+    """Function to get a mask for the valid action space
+
+    Args:
+        hand (list[Card]): Player hand
+        top_of_pile (Card): Card on the top of the pile
+        action_space (ActionSpace): The action space
+
+    Returns:
+         np.ndarray: boolean action mask
+    """
+    as_size = action_space.size()
+
+    cards = (
+        action_space.idx_to_card(action_idx, hand, top_of_pile)
+        for action_idx in range(as_size)
+    )
+
+    return np.array(
+        [
+            True if card is None else (card.can_play_on(top_of_pile) and card in hand)
+            for card in cards
+        ],
+        dtype=bool,
+    )
 
 
 def color_map(card_color, top_color):
@@ -19,11 +40,3 @@ def color_map(card_color, top_color):
 def reverse_color_map(card_color, top_color):
     assert top_color != Color.WILD
     return (card_color + top_color) % 4
-
-def sample(action_idxs, action_dist, epsilon=1):
-    action_idx = -1
-    if np.random.random() > epsilon:
-        action_idx = action_idxs[np.argmax(action_dist)]
-    else:
-        action_idx = np.random.choice(action_idxs, p=action_dist)
-    return action_idx

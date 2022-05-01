@@ -22,7 +22,7 @@ class FirstRLPlayer(Player):
         self.as_size = self.action_space.size()
 
         self.policy = policy_nets.PolNetBasic(
-            self.action_space, self.ss_size, player_args, game_args
+            self.action_space, self.state_space, player_args, game_args
         )
 
     def on_turn(self, pile, card_counts, drawn):
@@ -93,7 +93,7 @@ class SecondRLPlayer(Player):
         self.as_size = self.action_space.size()
 
         self.policy = policy_nets.PolNetValActions(
-            self.action_space, self.ss_size, player_args, game_args
+            self.action_space, self.state_space, player_args, game_args
         )
 
     def on_turn(self, pile, card_counts, drawn):
