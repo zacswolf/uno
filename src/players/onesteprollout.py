@@ -4,8 +4,8 @@ import logging
 from player import Player
 from players.common import action_space, state_space, value_nets
 from enums import Color, Type
-from players.common.misc import act_filter
 import numpy as np
+from card import Card
 
 class OneStepRollout(Player):
     def __init__(self, player_args, game_args) -> None:
@@ -28,6 +28,13 @@ class OneStepRollout(Player):
         self.last_reward = 0
         self.last_action = None
 
+    def act_filter(self, hand, card: Card | None, top_of_pile: Card):
+        # True if can is in hand and can be played on top_of_pile
+        if card is None:
+            return True
+        else:
+            return card.can_play_on(top_of_pile) and card in hand
+
     def get_hand_copy(self):
         return copy.deepcopy(self.hand)
 
@@ -36,7 +43,7 @@ class OneStepRollout(Player):
 
         # Get state prime
         state_prime = self.state_space.get_state(self.hand, top_of_pile, card_counts)
-        assert state_prime.shape[0] == self.state_space.size()
+        assert state_prime.state.shape[0] == self.state_space.size()
         state_prime_value = self.value.get_value(state_prime)
         logging.debug(f"state prime value: {state_prime_value}")
         
@@ -54,7 +61,7 @@ class OneStepRollout(Player):
         valid_actions_idxs = [
             action_idx
             for action_idx in range(len(self.hand))
-            if act_filter(self.hand, self.hand[action_idx], top_of_pile)
+            if self.act_filter(self.hand, self.hand[action_idx], top_of_pile)
         ]
 
         next_card_values=[]
