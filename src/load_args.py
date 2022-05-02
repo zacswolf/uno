@@ -1,7 +1,7 @@
 import argparse
 import os
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 # Nested Argument Data Classes
@@ -38,6 +38,7 @@ class ArgsPlayer:
     gamma: float = 1.0
     epsilon: float = 1.0
     player_idx: int = -1  # defined in code
+    hyper: dict = field(default_factory=dict)
 
 
 @dataclass
