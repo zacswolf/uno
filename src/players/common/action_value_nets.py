@@ -153,12 +153,6 @@ class AVNetValActions(ActionValueNet):
             nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
             nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
             nn.Linear(n_hidden, self.as_size),
         )
 
@@ -214,16 +208,11 @@ class AVNetValActions(ActionValueNet):
 
         action_idxs = [self.action_space.card_to_idx(action) for action in actions]
 
-        # print("states_torch.shape", states_torch.shape)
-        prediction_raw = self.net(states_torch)
-        # print("prediction_raw.shape", prediction_raw.shape)
-        # print("action_idxs", len(action_idxs))
+        values_raw = self.net(states_torch)
 
-        prediction = prediction_raw[np.arange(len(action_idxs)), action_idxs]
-        # print("prediction", prediction.shape)
-        # print("targets_torch", targets_torch.shape)
+        values = values_raw[np.arange(len(action_idxs)), action_idxs]
 
-        loss_v = self.loss(prediction, targets_torch)
+        loss_v = self.loss(values, targets_torch)
 
         self.optimizer.zero_grad()  # clear grad
         loss_v.backward()  # compute grad

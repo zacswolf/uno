@@ -11,7 +11,6 @@ class QLearner(Player):
     Algo: Deep Q-learning with Experience Replay
     StateSpace: SSRep1
     ActionSpace: ASRep1
-    ValueNet: ValueNet1
     PolicyNet: PolNetValActionsSoftmax
 
     RewardType: 1/-1 win/loss
@@ -191,7 +190,6 @@ class QLearnerBatch(Player):
     Algo: Deep Q-learning with Experience Replay with batching updates
     StateSpace: SSRep1
     ActionSpace: ASRep1
-    ValueNet: ValueNet1
     PolicyNet: PolNetValActionsSoftmax
 
     RewardType: 1/-1 win/loss
@@ -219,13 +217,19 @@ class QLearnerBatch(Player):
             self.action_space, self.state_space, player_args, game_args
         )
 
+        hyper = player_args.hyper
+
         # Hyper params
         # Size of the experience replay buffer
-        self.er_size = 1024
+        self.er_size = 1024 if "er_size" not in hyper else hyper["er_size"]
         # How many sars to sample and update during each iterations
-        self.minibatch_size = 32
+        self.minibatch_size = (
+            32 if "minibatch_size" not in hyper else hyper["minibatch_size"]
+        )
         # How many iterations until we set the target network to the predicted network's weights
-        self.num_iters_p2t = 256
+        self.num_iters_p2t = (
+            256 if "num_iters_p2t" not in hyper else hyper["num_iters_p2t"]
+        )
 
         # Cheap way to prioritize end of game
         self.final_flood = 0  # 10
