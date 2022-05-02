@@ -23,7 +23,7 @@ class Game:
                 raise ValueError("Invalid number of players")
             elif self.num_players != len(args.players):
                 raise ValueError(
-                    f"num_players arg ({self.num_players}) doesn't match players arg list ({args.players})"
+                    f"num_players arg ({self.num_players}) doesn't match players arg list ({len(args.players)}, {args.players})"
                 )
 
             self.players: list[Player] = []
