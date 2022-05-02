@@ -37,8 +37,9 @@ class ArgsPlayer:
     policy_net: str = ""
     gamma: float = 1.0
     epsilon: float = 1.0
-    player_idx: int = -1  # defined in code
+    sampler: str = ""  # eg, es, egnd, esnd
     hyper: dict = field(default_factory=dict)
+    player_idx: int = -1  # defined in code
 
 
 @dataclass

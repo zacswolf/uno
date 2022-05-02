@@ -129,8 +129,6 @@ class PolNetBasic(PolicyNet):
             nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
             nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
             nn.Linear(n_hidden, self.as_size),
             nn.Softmax(-1),
         )
@@ -138,6 +136,11 @@ class PolNetBasic(PolicyNet):
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
         )
+
+        # Choose sampler
+        sampler_str = player_args.sampler if player_args.sampler else "efd"
+        assert sampler_str == "efd" or sampler_str == "efdnd", "Invalid sampler"
+        self.sampler = sampler.from_sampler_str(sampler_str)
 
         if self.policy_load:
             self.load(self.policy_load)
@@ -171,9 +174,11 @@ class PolNetBasic(PolicyNet):
         state_torch = torch.from_numpy(state.state).type(torch.float32)
         action_dist = self.net(state_torch).detach().numpy()
 
+        # Don't mask
+        val_actions_mask = np.full(action_dist.shape, True)
+
         # Sample
-        # TODO: Not using sample method because we did it differently
-        action_idx = np.random.choice(np.arange(self.as_size), p=action_dist)
+        action_idx = self.sampler(action_dist, val_actions_mask)
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx, top_of_pile)
@@ -203,12 +208,6 @@ class PolNetValActions(PolicyNet):
             nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
             nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
             nn.Linear(n_hidden, self.as_size),
             nn.Softmax(-1),
         )
@@ -216,6 +215,11 @@ class PolNetValActions(PolicyNet):
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
         )
+
+        # Choose sampler
+        sampler_str = player_args.sampler if player_args.sampler else "efd"
+        assert sampler_str == "efd" or sampler_str == "efdnd", "Invalid sampler"
+        self.sampler = sampler.from_sampler_str(sampler_str)
 
         if self.policy_load:
             self.load(self.policy_load)
@@ -266,9 +270,7 @@ class PolNetValActions(PolicyNet):
             action_dist /= dist_sum
 
         # Sample epsilon soft but bc its already softmaxed its just e-greedy
-        action_idx = sampler.epsilon_greedy_sample(
-            action_dist, val_actions_mask, self.epsilon
-        )
+        action_idx = self.sampler(action_dist, val_actions_mask, self.epsilon)
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
@@ -298,18 +300,17 @@ class PolNetValActionsSoftmax(PolicyNet):
             nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
             nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden, n_hidden),
-            nn.LeakyReLU(),
             nn.Linear(n_hidden, self.as_size),
         )
 
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
         )
+
+        # Choose sampler
+        sampler_str = player_args.sampler if player_args.sampler else "es"
+        assert sampler_str != "efd" and sampler_str != "efdnd", "Invalid Sampler"
+        self.sampler = sampler.from_sampler_str(sampler_str)
 
         if self.policy_load:
             self.load(self.policy_load)
@@ -368,9 +369,7 @@ class PolNetValActionsSoftmax(PolicyNet):
         val_actions_mask = val_action_mask(hand, top_of_pile, self.action_space)
 
         # Sample epsilon soft
-        action_idx = sampler.epsilon_soft_sample(
-            action_vals, val_actions_mask, self.epsilon
-        )
+        action_idx = self.sampler(action_vals, val_actions_mask, self.epsilon)
 
         # Convert to card
         return self.action_space.idx_to_card(

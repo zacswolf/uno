@@ -74,7 +74,7 @@ class QLearner(Player):
             if self.er_idx >= self.er_size:
                 # full buffer
                 mini_batch_idxs = np.random.choice(
-                    np.arange(self.er_size), size=self.minibatch_size
+                    np.arange(self.er_size), size=self.minibatch_size, replace=False
                 )
 
             # This is commented as I think it drives the init to a bad state due to high corelations of its data in the buffer
@@ -310,7 +310,7 @@ class QLearnerBatch(Player):
             if self.er_idx >= self.er_size:
                 # full buffer
                 mini_batch_idxs = np.random.choice(
-                    np.arange(self.er_size), size=self.minibatch_size
+                    np.arange(self.er_size), size=self.minibatch_size, replace=False
                 )
 
             # This is commented as I think it drives the init to a bad state due to high corelations of its data in the buffer

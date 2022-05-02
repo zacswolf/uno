@@ -157,9 +157,16 @@ class AVNetValActions(ActionValueNet):
         )
 
         # lr=0.0001
-        self.optimizer = torch.optim.Adam(self.net.parameters(), betas=[0.9, 0.999])
+        self.optimizer = torch.optim.Adam(
+            self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
+        )
 
         self.loss = nn.MSELoss()
+
+        # Choose sampler
+        sampler_str = player_args.sampler if player_args.sampler else "eg"
+        assert sampler_str != "efd" and sampler_str != "efdnd", "Invalid sampler"
+        self.sampler = sampler.from_sampler_str(sampler_str)
 
         if self.policy_load:
             self.load(self.policy_load)
@@ -200,6 +207,11 @@ class AVNetValActions(ActionValueNet):
     ):
         states_np = np.array([state.state for state in states])
         states_torch = Variable(torch.from_numpy(states_np).type(torch.float32))
+
+        # TODO: Is this a good setting?
+        for idx in range(len(targets)):
+            targets[idx] = max(-1.0, min(1.0, targets[idx]))
+
         targets_torch = Variable(torch.FloatTensor(targets))
 
         logging.debug(
@@ -237,8 +249,6 @@ class AVNetValActions(ActionValueNet):
         (action_vals, val_actions_mask) = self.get_action_data(hand, state, top_of_pile)
 
         # e-greedy
-        action_idx = sampler.epsilon_greedy_sample(
-            action_vals, val_actions_mask, self.epsilon
-        )
+        action_idx = self.sampler(action_vals, val_actions_mask, self.epsilon)
 
         return self.action_space.idx_to_card(action_idx, hand, top_of_pile=top_of_pile)

@@ -12,6 +12,7 @@ game:
 players:
   - player: sarsa
     epsilon: .1
+    sampler: "egnd"
     hyper:
       er_size: 1024
       minibatch_size: 32
