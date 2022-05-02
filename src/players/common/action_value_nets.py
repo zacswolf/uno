@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import logging
 import os
 import numpy as np
 import torch
@@ -161,9 +162,10 @@ class AVNetValActions(ActionValueNet):
             nn.Linear(n_hidden, self.as_size),
         )
 
-        self.optimizer = torch.optim.Adam(
-            self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
-        )
+        # lr=0.0001
+        self.optimizer = torch.optim.Adam(self.net.parameters(), betas=[0.9, 0.999])
+
+        self.loss = nn.MSELoss()
 
         if self.policy_load:
             self.load(self.policy_load)
@@ -197,6 +199,34 @@ class AVNetValActions(ActionValueNet):
 
         self.optimizer.zero_grad()  # clear grad
         loss.backward()  # compute grad
+        self.optimizer.step()  # apply grad
+
+    def batch_update(
+        self, states: list[State], actions: list[Card | None], targets: list[float]
+    ):
+        states_np = np.array([state.state for state in states])
+        states_torch = Variable(torch.from_numpy(states_np).type(torch.float32))
+        targets_torch = Variable(torch.FloatTensor(targets))
+
+        logging.debug(
+            f"target max: {torch.max(targets_torch)}\t target min: {torch.min(targets_torch)}"
+        )
+
+        action_idxs = [self.action_space.card_to_idx(action) for action in actions]
+
+        # print("states_torch.shape", states_torch.shape)
+        prediction_raw = self.net(states_torch)
+        # print("prediction_raw.shape", prediction_raw.shape)
+        # print("action_idxs", len(action_idxs))
+
+        prediction = prediction_raw[np.arange(len(action_idxs)), action_idxs]
+        # print("prediction", prediction.shape)
+        # print("targets_torch", targets_torch.shape)
+
+        loss_v = self.loss(prediction, targets_torch)
+
+        self.optimizer.zero_grad()  # clear grad
+        loss_v.backward()  # compute grad
         self.optimizer.step()  # apply grad
 
     def get_action_data(self, hand, state, top_of_pile: Card):

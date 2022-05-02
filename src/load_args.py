@@ -178,9 +178,9 @@ def load_args() -> Args:
                 }
             )
 
-    if args.players:
-        for player in args.players:
-            arg_dict["players"].append({"player": player})
+    # if args.players:
+    #     for player in args.players:
+    #         arg_dict["players"].append({"player": player})
 
     if args.conf:
         # we have a config file

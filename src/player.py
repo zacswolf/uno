@@ -126,6 +126,15 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
         case "qlearn":
             from players.qlearning import QLearner
             return QLearner
+        case "qlearnbatch":
+            from players.qlearning import QLearnerBatch
+            return QLearnerBatch
+        case "onesteprollout":
+            from players.onesteprollout import OneStepRollout
+            return OneStepRollout
+        case "qlearnbatch":
+            from players.qlearning import QLearnerBatch
+            return QLearnerBatch
         case "onesteprollout":
             from players.onesteprollout import OneStepRollout
             return OneStepRollout
