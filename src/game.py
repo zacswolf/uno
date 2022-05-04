@@ -4,6 +4,7 @@ from enums import Direction, Color, Type
 from card import Card
 import logging
 from load_args import Args, load_args
+import numpy as np
 
 from player import str_to_player, Player
 
@@ -274,7 +275,7 @@ def main():
         game.reset(game_num)
         winner_idx, num_turns, winner_str = game.run_game()
         winner_tracker[winner_idx] += 1
-        game_res_str = f"Game over! {game_num}:{winner_tracker} Winner deats: player_idx: {winner_idx}, plyr_str: {winner_str}, turn_num: {num_turns}"
+        game_res_str = f"Game over! {game_num}:{winner_tracker} ({round(winner_tracker[0]/np.array(winner_tracker).sum(), 2)}) Winner deats: player_idx: {winner_idx}, plyr_str: {winner_str}, turn_num: {num_turns}"
         logging.info(game_res_str)
         print(game_res_str)
     print(winner_tracker)

@@ -89,13 +89,15 @@ class ReinforceValActions(Player):
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
+        self.value.on_finish()
+        self.policy.on_finish()
 
         self.game_num += 1
 
         if self.game_num == self.num_games:
             # Save models
-            self.value.save()
-            self.policy.save()
+            self.value.save("reinforce")
+            self.policy.save("reinforce")
 
 
 class ReinforceValActionsSoftmax(Player):
@@ -194,13 +196,15 @@ class ReinforceValActionsSoftmax(Player):
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
+        self.value.on_finish()
+        self.policy.on_finish()
 
         self.game_num += 1
 
         if self.game_num == self.num_games:
             # Save models
-            self.value.save()
-            self.policy.save()
+            self.value.save("reinforcesoft")
+            self.policy.save("reinforcesoft")
 
 
 class ReinforceValActionsSoftmax2(Player):
@@ -299,10 +303,12 @@ class ReinforceValActionsSoftmax2(Player):
         self.state_history = []
         self.action_history = []
         self.reward_history = [0]
+        self.value.on_finish()
+        self.policy.on_finish()
 
         self.game_num += 1
 
         if self.game_num == self.num_games:
             # Save models
-            self.value.save()
-            self.policy.save()
+            self.value.save("reinforcesoft2")
+            self.policy.save("reinforcesoft2")

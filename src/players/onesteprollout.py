@@ -111,7 +111,7 @@ class OneStepRollout(Player):
                 next_card_values.append(max(temp_next_card_values))
                 colors.append(np.argmax(temp_next_card_values))
             elif card.type == Type.DRAW2:
-                temp_card_count[1:] += 2
+                temp_card_count[1] += 2
                 temp_state = self.state_space.get_state(
                     temp_hand, temp_card, temp_card_count
                 )
@@ -210,9 +210,10 @@ class OneStepRollout(Player):
         self.last_state_value = 0
         self.last_reward = 0
         self.last_action = None
+        self.value.on_finish()
 
         self.game_num += 1
 
         if self.game_num == self.num_games:
             # Save models
-            self.value.save()
+            self.value.save("onestep_rollout")
