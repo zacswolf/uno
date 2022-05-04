@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from load_args import ArgsGameShared, ArgsPlayer
+import matplotlib.pyplot as plt
+import numpy as np
 
 from players.common.state_space import State, StateSpace
 
@@ -18,6 +20,7 @@ class ValueNet(ABC):
         super().__init__()
         self.state_space = state_space
         self.ss_size = self.state_space.size()
+        self.loss_vals=[]
 
         self.net: torch.nn.Module
 
@@ -69,12 +72,15 @@ class ValueNet(ABC):
             value_model_file = value_model_file = os.path.join(
                 self.model_dir, self.value_load
             )
+            plt.title(self.value_load + " value model loss")
         else:
             value_model_file = os.path.join(
                 self.model_dir,
                 f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt",
             )
-
+            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt value model loss")
+        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, 'o--')
+        plt.show()
         # Note: We are not saving/loading optimizer state
         torch.save(self.net.state_dict(), value_model_file)
 
@@ -109,13 +115,15 @@ class ValueNet1(ValueNet):
             nn.Linear(n_hidden, 1),
         )
 
+        if self.value_load:
+            self.load(self.value_load)
+
         self.optimizer = torch.optim.Adam(
-            self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
+            self.net.parameters(), lr=0.00005, betas=[0.9, 0.999]
         )
         self.loss_fnt = torch.nn.MSELoss()
 
-        if self.value_load:
-            self.load(self.value_load)
+        self.game_loss_vals=[]
 
     def update(self, state, G):
         self.net.train()
@@ -125,6 +133,7 @@ class ValueNet1(ValueNet):
 
         prediction = self.net(state_torch)
         loss = self.loss_fnt(prediction, G)
+        self.game_loss_vals.append(loss.item())
 
         self.optimizer.zero_grad()  # clear grad
         loss.backward()  # compute grad
@@ -136,3 +145,6 @@ class ValueNet1(ValueNet):
         state_torch = torch.from_numpy(state.state).type(torch.float32)
         value = self.net(state_torch)
         return value.item()
+
+    def on_finish(self):
+        self.loss_vals.append(np.average(self.game_loss_vals))

@@ -94,13 +94,15 @@ class OneStepActorCritic(Player):
         self.last_state = None
         self.last_state_value = 0
         self.last_action = None
+        self.value.on_finish()
+        self.policy.on_finish()
 
         self.game_num += 1
 
         if self.game_num == self.num_games:
             # Save models
-            self.value.save()
-            self.policy.save()
+            self.value.save("ac")
+            self.policy.save("ac")
 
 
 class OneStepActorCriticSoft(Player):
@@ -179,17 +181,19 @@ class OneStepActorCriticSoft(Player):
         reward = 2 * win - 1
 
         # Update
-        self.ac_update(self, reward, 0.0)
+        self.ac_update(reward, 0.0)
 
         # Reset for next game
         self.I = 1
         self.last_state = None
         self.last_state_value = 0
         self.last_action = None
+        self.value.on_finish()
+        self.policy.on_finish()
 
         self.game_num += 1
 
         if self.game_num == self.num_games:
             # Save models
-            self.value.save()
-            self.policy.save()
+            self.value.save("acsoft")
+            self.policy.save("acsoft")

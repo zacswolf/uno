@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as f
+import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from card import Card
 from load_args import ArgsGameShared, ArgsPlayer
@@ -29,6 +30,7 @@ class PolicyNet(ABC):
         self.state_space = state_space
         self.as_size = self.action_space.size()
         self.ss_size = self.state_space.size()
+        self.loss_vals=[]
 
         self.net: torch.nn.Module
 
@@ -84,11 +86,16 @@ class PolicyNet(ABC):
         if self.policy_load:
             # Saves to same file loaded in
             policy_model_file = os.path.join(self.model_dir, self.policy_load)
+            plt.title(self.value_load + " policy model loss")
         else:
             policy_model_file = os.path.join(
                 self.model_dir,
                 f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt",
             )
+            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt policy model loss")
+
+        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, 'o--')
+        plt.show()
 
         # Note: We are not saving/loading optimizer state
         torch.save(self.net.state_dict(), policy_model_file)
@@ -199,6 +206,8 @@ class PolNetValActions(PolicyNet):
         self.epsilon = player_args.epsilon
         n_hidden = 128
 
+        self.game_loss_vals=[]
+
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
             nn.LeakyReLU(),
@@ -241,6 +250,7 @@ class PolNetValActions(PolicyNet):
 
         log_prob = self.net(state_torch)[action_idx]
         loss = -1 * reward * log_prob
+        self.game_loss_vals.append(loss.item())
 
         self.optimizer.zero_grad()  # clear grad
         loss.backward()  # compute grad
@@ -274,6 +284,9 @@ class PolNetValActions(PolicyNet):
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
+    
+    def on_finish(self):
+        self.loss_vals.append(np.average(self.game_loss_vals))
 
 
 class PolNetValActionsSoftmax(PolicyNet):
@@ -290,6 +303,8 @@ class PolNetValActionsSoftmax(PolicyNet):
 
         n_hidden = 128
         self.epsilon = player_args.epsilon
+
+        self.game_loss_vals=[]
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
@@ -350,6 +365,7 @@ class PolNetValActionsSoftmax(PolicyNet):
 
         log_prob = action_vals[action_idx]
         loss = -1 * reward * log_prob
+        self.game_loss_vals.append(loss.item())
 
         self.optimizer.zero_grad()  # clear grad
         loss.backward()  # compute grad
@@ -375,3 +391,6 @@ class PolNetValActionsSoftmax(PolicyNet):
         return self.action_space.idx_to_card(
             action_idx, hand=hand, top_of_pile=top_of_pile
         )
+
+    def on_finish(self):
+        self.loss_vals.append(np.average(self.game_loss_vals))

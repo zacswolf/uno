@@ -385,8 +385,9 @@ class QLearnerBatch(Player):
         # Reset for next game
         self.last_state = None
         self.last_action = None
+        self.target_q_net.on_finish()
 
         self.game_num += 1
         if self.game_num == self.num_games:
             # Save model
-            self.pred_q_net.save()
+            self.pred_q_net.save("q_learning")
