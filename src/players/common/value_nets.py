@@ -148,3 +148,4 @@ class ValueNet1(ValueNet):
 
     def on_finish(self):
         self.loss_vals.append(np.average(self.game_loss_vals))
+        self.game_loss_vals=[]
