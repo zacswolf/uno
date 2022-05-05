@@ -268,3 +268,4 @@ class AVNetValActions(ActionValueNet):
 
     def on_finish(self):
         self.loss_vals.append(np.average(self.game_loss_vals))
+        self.game_loss_vals=[]
