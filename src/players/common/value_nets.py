@@ -103,15 +103,23 @@ class ValueNet1(ValueNet):
     ) -> None:
         super().__init__(state_space, player_args, game_args)
 
-        n_hidden = 128
-
+        n_hidden = 64
+        
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden),
-            nn.ReLU(),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.LeakyReLU(),
             nn.Linear(n_hidden, 1),
         )
 

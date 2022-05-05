@@ -5,6 +5,7 @@ from card import Card
 import logging
 from load_args import Args, load_args
 import numpy as np
+import matplotlib.pyplot as plt
 
 from player import str_to_player, Player
 
@@ -270,17 +271,34 @@ def main():
     # Main
     game = Game(args)
     winner_tracker = [0] * (args.game.shared.num_players + 1)
+    rolling_avg = []
+    game_tracker = []
+    for i in range(args.game.shared.num_players):
+        rolling_avg.append([])
+        game_tracker.append([])
+    rolling_num = 10
     for game_num in range(args.game.shared.num_games):
         logging.info("STARTING GAME %d" % game_num)
         game.reset(game_num)
         winner_idx, num_turns, winner_str = game.run_game()
         winner_tracker[winner_idx] += 1
+        # Update array of every game's result for each player
+        for i in range(args.game.shared.num_players):
+            game_tracker[i].append(1) if winner_idx == i else game_tracker[i].append(0)
+        # Update rolling avg of win percentage
+        if game_num >= rolling_num-1:
+            for i in range(args.game.shared.num_players):
+                rolling_avg[i].append(np.sum(game_tracker[i][-rolling_num:])/ rolling_num)
         game_res_str = f"Game over! {game_num}:{winner_tracker} ({round(winner_tracker[0]/np.array(winner_tracker).sum(), 2)}) Winner deats: player_idx: {winner_idx}, plyr_str: {winner_str}, turn_num: {num_turns}"
         logging.info(game_res_str)
         print(game_res_str)
     print(winner_tracker)
     logging.info(f"Winner tracker: {winner_tracker}")
 
+    for i in range(args.game.shared.num_players): 
+        plt.title(f"Player {i}'s {str(rolling_num)} game running avg win percentage")
+        plt.plot(np.arange(len(rolling_avg[i])), rolling_avg[i])
+        plt.show()
 
 if __name__ == "__main__":
     main()
