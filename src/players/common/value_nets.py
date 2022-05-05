@@ -119,7 +119,7 @@ class ValueNet1(ValueNet):
             self.load(self.value_load)
 
         self.optimizer = torch.optim.Adam(
-            self.net.parameters(), lr=0.00005, betas=[0.9, 0.999]
+            self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
         )
         self.loss_fnt = torch.nn.MSELoss()
 
