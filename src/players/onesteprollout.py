@@ -93,7 +93,7 @@ class OneStepRollout(Player):
                         temp_value = self.value.get_value(temp_state)
                         temp_value0 = self.value.get_value(temp_state0)
                         temp_value1 = self.value.get_value(temp_state1)
-                        chance_not_playable_card = 1 - (
+                        chance_not_playable_card = (
                             (1 / Color.WILD) + 8 / 108
                         )  # 8/108 is for Wilds
                         chance_opp_has_card = 1 - (
@@ -138,7 +138,7 @@ class OneStepRollout(Player):
                 temp_value = self.value.get_value(temp_state)
                 temp_value0 = self.value.get_value(temp_state0)
                 temp_value1 = self.value.get_value(temp_state1)
-                chance_not_playable_card = 1 - (
+                chance_not_playable_card = (
                     (1 / Color.WILD) + 8 / 108
                 )  # 8/108 is for Wilds
                 chance_opp_has_card = 1 - (chance_not_playable_card ** card_counts[1])
