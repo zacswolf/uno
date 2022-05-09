@@ -86,7 +86,7 @@ class PolicyNet(ABC):
         if self.policy_load:
             # Saves to same file loaded in
             policy_model_file = os.path.join(self.model_dir, self.policy_load)
-            plt.title(self.value_load + " policy model loss")
+            plt.title(self.policy_load + " policy model loss")
         else:
             policy_model_file = os.path.join(
                 self.model_dir,
