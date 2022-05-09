@@ -239,7 +239,7 @@ class QLearnerBatch(Player):
         self.er_idx = 0
         self.p2t_idx = 0
 
-        assert self.minibatch_size < self.er_size
+        assert self.minibatch_size <= self.er_size
 
         self.last_state = None
         self.last_action = None

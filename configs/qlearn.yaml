@@ -10,12 +10,12 @@ game:
     
 
 players:
-  - player: qlearn
+  - player: qlearnbatch
     epsilon: .3
     sampler: egnd
     hyper:
       er_size: 4
       minibatch_size: 4
       num_iters_p2t: 32
-  - player: decent4
+  - player: random
 
