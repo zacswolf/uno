@@ -112,13 +112,13 @@ class ActionValueNet(ABC):
         if self.policy_load:
             # Saves to same file loaded in
             policy_model_file = os.path.join(self.model_dir, self.policy_load)
-            plt.title(self.value_load + " q value model loss")
+            plt.title(self.policy_load + " q value model loss")
         else:
             policy_model_file = os.path.join(
                 self.model_dir,
                 f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_av.pt",
             )
-            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt q value model loss")
+            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_av.pt q value model loss")
 
         plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, 'o--')
         plt.show()
