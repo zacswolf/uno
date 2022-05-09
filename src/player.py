@@ -55,6 +55,9 @@ class Player(ABC):
         Args:
             winner (int): A player index relative to player or -1 if no-one wins
         """
+    def reset(self) -> None:
+        """Reset the player's hand"""
+        self.hand = []
 
 
 def str_to_player(plyr_str: str) -> Callable[[], Player]:
@@ -135,5 +138,8 @@ def str_to_player(plyr_str: str) -> Callable[[], Player]:
         case "sarsa":
             from players.sarsa import DeepSarsa
             return DeepSarsa
+        case "valuelearner":
+            from players.value_learner import ValueLearner
+            return ValueLearner
 
     raise ValueError("player string `%s` is invalid" % plyr_str)

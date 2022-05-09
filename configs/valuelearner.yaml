@@ -1,0 +1,17 @@
+game:
+  shared: # Shared with players
+    num_players: 2
+    num_games: 100
+  private: # Hidden from players
+    with_replacement: True
+    num_cards: 7
+    alternate: True
+    draw_skip: True
+    
+
+players:
+  - player: valuelearner
+  # - player: decent4
+  # value_net: 05_02_15_09_48_0_val.pt
+  - player: decent4
+
