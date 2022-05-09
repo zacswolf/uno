@@ -49,7 +49,7 @@ class Game:
 
         # Clear hands
         for player in self.players:
-            player.hand = []
+            player.reset()
 
         # Deal
         for _ in range(args.game.private.num_cards):

@@ -277,3 +277,241 @@ class SSRep2(StateSpace):
 #   A distribution over the whole card action space except that the cards it has are at the front (rotated)
 
 # The wild card out puts should be colored not wild
+
+
+class SSRep3(StateSpace):
+    """SSRep1 except hand and card counts is divided by div and card_count_div"""
+
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
+
+        self.ss_length = (
+            self.NUM_COLORS_NON_WILD
+            + self.NUM_TYPES
+            + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+            + self.NUM_TYPES_WILD
+            + self.num_players
+        )
+        assert self.ss_length == 73 + self.num_players
+
+        self.div = 20
+        self.card_count_div = 40
+
+    def size(self) -> int:
+        return self.ss_length
+
+    def get_state(
+        self, hand: list[Card], top_of_pile: Card, card_counts: list[int]
+    ) -> State:
+        # ASSUME: 2 players only
+
+        # top of pile [onehot color, onehot type]
+        #       colors are in enum order no wild
+        #       type is in enum order
+        # hand: a count array for every color/type combo
+        #       color enum pri, type enum second
+        # card counts [cc0: me, cc1]
+        #       in rotation order
+
+        # length should be num_players + 4colors + 15types + 4*13 + 2
+        assert len(card_counts) == self.num_players
+
+        ss = np.zeros(self.ss_length)
+
+        # top of pile
+        assert top_of_pile.color != Color.WILD
+        ss[top_of_pile.color] = 1
+        ss[self.NUM_COLORS_NON_WILD + top_of_pile.type] = 1
+
+        # Hand
+        for card in hand:
+            if card.color != Color.WILD:
+                assert (card.type != Type.CHANGECOLOR) and (card.type != Type.DRAW4)
+                ss[
+                    self.NUM_COLORS_NON_WILD
+                    + self.NUM_TYPES
+                    + card.color * self.NUM_TYPES_NON_WILD
+                    + card.type
+                ] += (1.0 / self.div)
+            else:
+                assert (card.type == Type.CHANGECOLOR) or (card.type == Type.DRAW4)
+                ss[
+                    self.NUM_COLORS_NON_WILD
+                    + self.NUM_TYPES
+                    + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                    + (card.type - Type.CHANGECOLOR)
+                ] += (1.0 / self.div)
+
+        # card counts
+        ss[-len(card_counts) :] = np.array(card_counts) / self.card_count_div
+
+        return State(ss)
+
+    def get_hand(self, state: State) -> list[Card]:
+        hand = []
+
+        for color in range(self.NUM_COLORS_NON_WILD):
+            for c_type in range(self.NUM_TYPES_NON_WILD):
+                for _ in range(
+                    int(
+                        state.state[
+                            self.NUM_COLORS_NON_WILD
+                            + self.NUM_TYPES
+                            + color * self.NUM_TYPES_NON_WILD
+                            + c_type
+                        ]
+                        * self.div
+                    )
+                ):
+                    hand.append(Card(Type(c_type), Color(color)))
+
+        for c_type in range(self.NUM_TYPES_WILD):
+            for _ in range(
+                int(
+                    state.state[
+                        self.NUM_COLORS_NON_WILD
+                        + self.NUM_TYPES
+                        + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                        + c_type
+                    ]
+                    * self.div
+                )
+            ):
+                hand.append(Card(Type(c_type + Type.CHANGECOLOR), Color.WILD))
+
+        return hand
+
+    def get_top_of_pile(self, state: State) -> Card:
+        color = Color(np.flatnonzero(state.state[: self.NUM_COLORS_NON_WILD]))
+        type = Type(
+            np.flatnonzero(
+                state.state[
+                    self.NUM_COLORS_NON_WILD : self.NUM_COLORS_NON_WILD + self.NUM_TYPES
+                ]
+            )
+        )
+        return Card(type, color)
+
+
+class SSRep4(StateSpace):
+    """SSRep1 except hand is just an indicator"""
+
+    def __init__(self, game_args) -> None:
+        super().__init__(game_args)
+
+        self.ss_length = (
+            self.NUM_COLORS_NON_WILD
+            + self.NUM_TYPES
+            + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+            + self.NUM_TYPES_WILD
+            + self.num_players
+        )
+        assert self.ss_length == 73 + self.num_players
+
+    def size(self) -> int:
+        return self.ss_length
+
+    def get_state(
+        self, hand: list[Card], top_of_pile: Card, card_counts: list[int]
+    ) -> State:
+        # ASSUME: 2 players only
+
+        # top of pile [onehot color, onehot type]
+        #       colors are in enum order no wild
+        #       type is in enum order
+        # hand: a count array for every color/type combo
+        #       color enum pri, type enum second
+        # card counts [cc0: me, cc1]
+        #       in rotation order
+
+        # length should be num_players + 4colors + 15types + 4*13 + 2
+        assert len(card_counts) == self.num_players
+
+        ss = np.zeros(self.ss_length)
+        ss_meta = np.zeros(self.ss_length)  # just for the hand
+
+        # top of pile
+        assert top_of_pile.color != Color.WILD
+        ss[top_of_pile.color] = 1
+        ss[self.NUM_COLORS_NON_WILD + top_of_pile.type] = 1
+
+        # Hand
+        for card in hand:
+            if card.color != Color.WILD:
+                assert (card.type != Type.CHANGECOLOR) and (card.type != Type.DRAW4)
+                ss[
+                    self.NUM_COLORS_NON_WILD
+                    + self.NUM_TYPES
+                    + card.color * self.NUM_TYPES_NON_WILD
+                    + card.type
+                ] = 1
+
+                ss_meta[
+                    self.NUM_COLORS_NON_WILD
+                    + self.NUM_TYPES
+                    + card.color * self.NUM_TYPES_NON_WILD
+                    + card.type
+                ] += 1
+            else:
+                assert (card.type == Type.CHANGECOLOR) or (card.type == Type.DRAW4)
+                ss[
+                    self.NUM_COLORS_NON_WILD
+                    + self.NUM_TYPES
+                    + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                    + (card.type - Type.CHANGECOLOR)
+                ] = 1
+
+                ss_meta[
+                    self.NUM_COLORS_NON_WILD
+                    + self.NUM_TYPES
+                    + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                    + (card.type - Type.CHANGECOLOR)
+                ] += 1
+
+        # card counts
+        ss[-len(card_counts) :] = card_counts
+
+        return State(ss, meta={"ss_meta": ss_meta})
+
+    def get_hand(self, state: State) -> list[Card]:
+        hand = []
+
+        for color in range(self.NUM_COLORS_NON_WILD):
+            for c_type in range(self.NUM_TYPES_NON_WILD):
+                for _ in range(
+                    int(
+                        state.meta["ss_meta"][
+                            self.NUM_COLORS_NON_WILD
+                            + self.NUM_TYPES
+                            + color * self.NUM_TYPES_NON_WILD
+                            + c_type
+                        ]
+                    )
+                ):
+                    hand.append(Card(Type(c_type), Color(color)))
+
+        for c_type in range(self.NUM_TYPES_WILD):
+            for _ in range(
+                int(
+                    state.meta["ss_meta"][
+                        self.NUM_COLORS_NON_WILD
+                        + self.NUM_TYPES
+                        + self.NUM_COLORS_NON_WILD * self.NUM_TYPES_NON_WILD
+                        + c_type
+                    ]
+                )
+            ):
+                hand.append(Card(Type(c_type + Type.CHANGECOLOR), Color.WILD))
+
+        return hand
+
+    def get_top_of_pile(self, state: State) -> Card:
+        color = Color(np.flatnonzero(state.state[: self.NUM_COLORS_NON_WILD]))
+        type = Type(
+            np.flatnonzero(
+                state.state[
+                    self.NUM_COLORS_NON_WILD : self.NUM_COLORS_NON_WILD + self.NUM_TYPES
+                ]
+            )
+        )
+        return Card(type, color)

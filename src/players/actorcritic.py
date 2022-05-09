@@ -149,7 +149,7 @@ class OneStepActorCriticSoft(Player):
         state = self.state_space.get_state(self.hand, top_of_pile, card_counts)
         assert state.state.shape[0] == self.state_space.size()
         state_value = self.value.get_value(state)
-        logging.debug(f"state value: {state}")
+        logging.debug(f"state value: {state_value}")
 
         reward = 0
 

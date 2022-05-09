@@ -20,7 +20,7 @@ class ValueNet(ABC):
         super().__init__()
         self.state_space = state_space
         self.ss_size = self.state_space.size()
-        self.loss_vals=[]
+        self.loss_vals = []
 
         self.net: torch.nn.Module
 
@@ -78,8 +78,10 @@ class ValueNet(ABC):
                 self.model_dir,
                 f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt",
             )
-            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt value model loss")
-        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, 'o--')
+            plt.title(
+                f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_val.pt value model loss"
+            )
+        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, "o--")
         plt.show()
         # Note: We are not saving/loading optimizer state
         torch.save(self.net.state_dict(), value_model_file)
@@ -104,7 +106,7 @@ class ValueNet1(ValueNet):
         super().__init__(state_space, player_args, game_args)
 
         n_hidden = 64
-        
+
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
             nn.LeakyReLU(),
@@ -123,15 +125,73 @@ class ValueNet1(ValueNet):
             nn.Linear(n_hidden, 1),
         )
 
+        self.optimizer = torch.optim.Adam(
+            self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
+        )
+        self.loss_fnt = torch.nn.MSELoss()
+
+        self.game_loss_vals = []
+
         if self.value_load:
             self.load(self.value_load)
+
+    def update(self, state, G):
+        self.net.train()
+
+        G = Variable(torch.FloatTensor([G]))
+        state_torch = Variable(torch.from_numpy(state.state).type(torch.float32))
+
+        prediction = self.net(state_torch)
+        loss = self.loss_fnt(prediction, G)
+
+        self.optimizer.zero_grad()  # clear grad
+        loss.backward()  # compute grad
+        self.optimizer.step()  # apply grad
+
+    def get_value(self, state):
+        self.net.eval()
+
+        state_torch = torch.from_numpy(state.state).type(torch.float32)
+        value = self.net(state_torch)
+        return value.item()
+
+    def on_finish(self):
+        self.loss_vals.append(np.average(self.game_loss_vals))
+        self.game_loss_vals = []
+
+
+class ValueNet2(ValueNet):
+    def __init__(
+        self,
+        state_space: StateSpace,
+        player_args: ArgsPlayer,
+        game_args: ArgsGameShared,
+    ) -> None:
+        super().__init__(state_space, player_args, game_args)
+
+        n_hidden = 128
+
+        self.net = nn.Sequential(
+            nn.Linear(self.ss_size, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, n_hidden),  #
+            nn.ReLU(),  #
+            nn.Linear(n_hidden, 1),
+        )
 
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), lr=0.0001, betas=[0.9, 0.999]
         )
         self.loss_fnt = torch.nn.MSELoss()
 
-        self.game_loss_vals=[]
+        self.game_loss_vals = []
+
+        if self.value_load:
+            self.load(self.value_load)
 
     def update(self, state, G):
         self.net.train()
@@ -156,4 +216,4 @@ class ValueNet1(ValueNet):
 
     def on_finish(self):
         self.loss_vals.append(np.average(self.game_loss_vals))
-        self.game_loss_vals=[]
+        self.game_loss_vals = []
