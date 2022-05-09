@@ -143,6 +143,7 @@ class ValueNet1(ValueNet):
 
         prediction = self.net(state_torch)
         loss = self.loss_fnt(prediction, G)
+        self.game_loss_vals.append(loss.item())
 
         self.optimizer.zero_grad()  # clear grad
         loss.backward()  # compute grad
