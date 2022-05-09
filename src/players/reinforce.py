@@ -13,7 +13,7 @@ class ReinforceValActions(Player):
 
         self.update = game_args.update
 
-        self.state_space = state_space.SSRep1(game_args)
+        self.state_space = state_space.SSRep3(game_args)
         self.action_space = action_space.ASRep1(game_args)
 
         self.policy = policy_nets.PolNetValActions(
@@ -103,7 +103,7 @@ class ReinforceValActions(Player):
 class ReinforceValActionsSoftmax(Player):
     """
     Algo: Reinforce
-    StateSpace: SSRep1
+    StateSpace: SSRep3
     ActionSpace: ASRep1
     ValueNet: ValueNet1
     PolicyNet: PolNetValActionsSoftmax
@@ -119,7 +119,7 @@ class ReinforceValActionsSoftmax(Player):
 
         self.update = game_args.update
 
-        self.state_space = state_space.SSRep1(game_args)
+        self.state_space = state_space.SSRep3(game_args)
         self.action_space = action_space.ASRep1(game_args)
 
         self.policy = policy_nets.PolNetValActionsSoftmax(

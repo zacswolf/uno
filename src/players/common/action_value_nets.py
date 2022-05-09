@@ -30,7 +30,7 @@ class ActionValueNet(ABC):
 
         self.as_size = self.action_space.size()
         self.ss_size = self.state_space.size()
-        self.loss_vals=[]
+        self.loss_vals = []
 
         self.net: torch.nn.Module
 
@@ -118,9 +118,11 @@ class ActionValueNet(ABC):
                 self.model_dir,
                 f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_av.pt",
             )
-            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_av.pt q value model loss")
+            plt.title(
+                f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_av.pt q value model loss"
+            )
 
-        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, 'o--')
+        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, "o--")
         plt.show()
 
         # Note: We are not saving/loading optimizer state
@@ -151,7 +153,7 @@ class AVNetValActions(ActionValueNet):
         n_hidden = 128
         self.epsilon = player_args.epsilon
 
-        self.game_loss_vals=[]
+        self.game_loss_vals = []
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
@@ -264,8 +266,7 @@ class AVNetValActions(ActionValueNet):
         action_idx = self.sampler(action_vals, val_actions_mask, self.epsilon)
 
         return self.action_space.idx_to_card(action_idx, hand, top_of_pile=top_of_pile)
-    
 
     def on_finish(self):
         self.loss_vals.append(np.average(self.game_loss_vals))
-        self.game_loss_vals=[]
+        self.game_loss_vals = []

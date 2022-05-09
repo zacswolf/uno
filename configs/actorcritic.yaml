@@ -1,10 +1,10 @@
 game:
   shared: # Shared with players
     num_players: 2
-    num_games: 50
+    num_games: 10000
   private: # Hidden from players
     with_replacement: True
-    num_cards: 4
+    num_cards: 7
     alternate: True
     draw_skip: True
     
@@ -12,6 +12,7 @@ game:
 players:
   - player: onestepacsoft
   # - player: onestepac
-    epsilon: .3
-  - player: decent4
+    sampler: esnd
+    epsilon: .7
+  - player: random
 

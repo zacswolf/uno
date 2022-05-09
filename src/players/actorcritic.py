@@ -1,4 +1,3 @@
-import copy
 import logging
 from load_args import ArgsGameShared, ArgsPlayer
 from player import Player
@@ -14,7 +13,7 @@ class OneStepActorCritic(Player):
 
         self.update = game_args.update
 
-        self.state_space = state_space.SSRep1(game_args)
+        self.state_space = state_space.SSRep3(game_args)
         self.action_space = action_space.ASRep1(game_args)
 
         self.policy = policy_nets.PolNetValActions(
@@ -114,7 +113,7 @@ class OneStepActorCriticSoft(Player):
 
         self.update = game_args.update
 
-        self.state_space = state_space.SSRep1(game_args)
+        self.state_space = state_space.SSRep3(game_args)
         self.action_space = action_space.ASRep1(game_args)
 
         # self.policy is the difference between OneStepActorCritic and OneStepActorCriticSoft

@@ -1,7 +1,7 @@
 game:
   shared: # Shared with players
     num_players: 2
-    num_games: 100
+    num_games: 10000
   private: # Hidden from players
     with_replacement: True
     num_cards: 7

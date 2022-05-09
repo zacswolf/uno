@@ -30,7 +30,7 @@ class PolicyNet(ABC):
         self.state_space = state_space
         self.as_size = self.action_space.size()
         self.ss_size = self.state_space.size()
-        self.loss_vals=[]
+        self.loss_vals = []
 
         self.net: torch.nn.Module
 
@@ -92,9 +92,11 @@ class PolicyNet(ABC):
                 self.model_dir,
                 f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt",
             )
-            plt.title(f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt policy model loss")
+            plt.title(
+                f"{self.run_name}_{self.player_idx}{f'_{tag}' if tag else ''}_pol.pt policy model loss"
+            )
 
-        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, 'o--')
+        plt.plot(np.arange(len(self.loss_vals)), self.loss_vals, "o--")
         plt.show()
 
         # Note: We are not saving/loading optimizer state
@@ -206,7 +208,7 @@ class PolNetValActions(PolicyNet):
         self.epsilon = player_args.epsilon
         n_hidden = 128
 
-        self.game_loss_vals=[]
+        self.game_loss_vals = []
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
@@ -284,10 +286,10 @@ class PolNetValActions(PolicyNet):
 
         # Convert to card
         return self.action_space.idx_to_card(action_idx)
-    
+
     def on_finish(self):
         self.loss_vals.append(np.average(self.game_loss_vals))
-        self.game_loss_vals=[]
+        self.game_loss_vals = []
 
 
 class PolNetValActionsSoftmax(PolicyNet):
@@ -305,7 +307,7 @@ class PolNetValActionsSoftmax(PolicyNet):
         n_hidden = 128
         self.epsilon = player_args.epsilon
 
-        self.game_loss_vals=[]
+        self.game_loss_vals = []
 
         self.net = nn.Sequential(
             nn.Linear(self.ss_size, n_hidden),
@@ -325,7 +327,7 @@ class PolNetValActionsSoftmax(PolicyNet):
 
         # Choose sampler
         sampler_str = player_args.sampler if player_args.sampler else "es"
-        assert sampler_str != "efd" and sampler_str != "efdnd", "Invalid Sampler"
+        assert sampler_str == "es" or sampler_str == "esnd", "Invalid Sampler"
         self.sampler = sampler.from_sampler_str(sampler_str)
 
         if self.policy_load:
@@ -395,4 +397,4 @@ class PolNetValActionsSoftmax(PolicyNet):
 
     def on_finish(self):
         self.loss_vals.append(np.average(self.game_loss_vals))
-        self.game_loss_vals=[]
+        self.game_loss_vals = []

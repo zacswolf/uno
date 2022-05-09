@@ -10,7 +10,7 @@ from players.common.state_space import State
 class DeepSarsa(Player):
     """
     Algo: Deep Sarsa
-    StateSpace: SSRep1
+    StateSpace: SSRep3
     ActionSpace: ASRep1
     PolicyNet: PolNetValActionsSoftmax
 
@@ -28,7 +28,7 @@ class DeepSarsa(Player):
         self.update = game_args.update
         self.gamma = player_args.gamma
 
-        self.state_space = state_space.SSRep1(game_args)
+        self.state_space = state_space.SSRep3(game_args)
         self.action_space = action_space.ASRep1(game_args)
 
         self.pred_q_net = action_value_nets.AVNetValActions(

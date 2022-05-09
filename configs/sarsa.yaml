@@ -1,21 +1,22 @@
 game:
   shared: # Shared with players
     num_players: 2
-    num_games: 100
+    num_games: 10000
   private: # Hidden from players
     with_replacement: True
-    num_cards: 4
+    num_cards: 7
     alternate: True
     draw_skip: True
+    
     
 
 players:
   - player: sarsa
-    epsilon: .1
-    sampler: "egnd"
+    epsilon: .3
+    sampler: egnd
     hyper:
-      er_size: 1024
-      minibatch_size: 32
+      er_size: 4
+      minibatch_size: 4
       num_iters_p2t: 32
-  - player: noob
+  - player: random
 

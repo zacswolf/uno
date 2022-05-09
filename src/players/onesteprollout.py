@@ -17,7 +17,7 @@ class OneStepRollout(Player):
 
         self.update = game_args.update
 
-        self.state_space = state_space.SSRep1(game_args)
+        self.state_space = state_space.SSRep3(game_args)
         self.action_space = action_space.ASRep1(game_args)
 
         self.value = value_nets.ValueNet1(self.state_space, player_args, game_args)
@@ -94,8 +94,8 @@ class OneStepRollout(Player):
                         temp_value0 = self.value.get_value(temp_state0)
                         temp_value1 = self.value.get_value(temp_state1)
                         chance_not_playable_card = (
-                            (1 / Color.WILD) + 8 / 108
-                        )  # 8/108 is for Wilds
+                            1 / Color.WILD
+                        ) + 8 / 108  # 8/108 is for Wilds
                         chance_opp_has_card = 1 - (
                             chance_not_playable_card ** card_counts[1]
                         )
@@ -139,8 +139,8 @@ class OneStepRollout(Player):
                 temp_value0 = self.value.get_value(temp_state0)
                 temp_value1 = self.value.get_value(temp_state1)
                 chance_not_playable_card = (
-                    (1 / Color.WILD) + 8 / 108
-                )  # 8/108 is for Wilds
+                    1 / Color.WILD
+                ) + 8 / 108  # 8/108 is for Wilds
                 chance_opp_has_card = 1 - (chance_not_playable_card ** card_counts[1])
                 next_card_values.append(
                     chance_opp_has_card
